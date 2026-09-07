@@ -1,12 +1,11 @@
 """Roteamento de URLs do painel administrativo privado."""
 
-from django.urls import path
+from django.urls import include, path
 
 from .views import (
     LoginAdministrativoView,
     LogoutAdministrativoView,
     WorkspaceRedirectView,
-    WorkspaceSitesView,
 )
 
 app_name = "painel"
@@ -14,6 +13,7 @@ app_name = "painel"
 urlpatterns = [
     path("login/", LoginAdministrativoView.as_view(), name="login"),
     path("logout/", LogoutAdministrativoView.as_view(), name="logout"),
-    path("sites/", WorkspaceSitesView.as_view(), name="sites"),
+    path("clientes/", include("aplicativos.clientes.urls")),
+    path("sites/", include("aplicativos.sites.urls")),
     path("", WorkspaceRedirectView.as_view(), name="inicio"),
 ]

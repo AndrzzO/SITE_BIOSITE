@@ -1,0 +1,163 @@
+{% extends "painel/base.html" %}
+{% load humanize %}
+
+{% block title %}{{ cliente.nome }} — Detalhes do Cliente{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Navegação Estrutural">
+    <a href="{% url 'painel:sites' %}">Painel</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'painel:clientes_lista' %}">Clientes</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>{{ cliente.nome }}</span>
+</nav>
+
+<div class="workspace-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <h1 class="workspace-title">{{ cliente.nome }}</h1>
+            {% if cliente.status == 'ativo' %}
+                <span class="site-card-badge badge-publicado" style="position: static;">Ativo</span>
+            {% else %}
+                <span class="site-card-badge badge-arquivado" style="position: static;">Arquivado</span>
+            {% endif %}
+        </div>
+        {% if cliente.nome_fantasia %}
+            <p class="workspace-subtitle">{{ cliente.nome_fantasia }}</p>
+        {% endif %}
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <a href="{% url 'painel:cliente_editar' cliente.uuid %}" class="btn btn-secondary">
+            Editar Cliente
+        </a>
+        {% if cliente.status == 'ativo' %}
+            <form method="post" action="{% url 'painel:cliente_arquivar' cliente.uuid %}" onsubmit="return confirm('Deseja realmente arquivar este cliente?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Arquivar</button>
+            </form>
+        {% else %}
+            <form method="post" action="{% url 'painel:cliente_restaurar' cliente.uuid %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Restaurar</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+    <!-- Coluna Esquerda: Lista de Projetos do Cliente -->
+    <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 700;">Projetos de Sites ({{ projetos|length }})</h2>
+            {% if cliente.status == 'ativo' %}
+                <a href="{% url 'painel:site_novo' %}?cliente={{ cliente.uuid }}" class="btn btn-primary btn-sm">
+                    + Novo Site para este Cliente
+                </a>
+            {% else %}
+                <span style="font-size: 0.75rem; color: var(--painel-text-muted);">
+                    Cliente arquivado não pode receber novos sites
+                </span>
+            {% endif %}
+        </div>
+
+        {% if projetos %}
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for projeto in projetos %}
+                    <div class="site-card" style="flex-direction: row; align-items: center; justify-content: space-between; padding: 1.25rem;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <a href="{% url 'painel:site_detalhe' projeto.uuid %}" style="font-weight: 700; font-size: 1.125rem; color: var(--painel-text); text-decoration: none;">
+                                    {{ projeto.nome }}
+                                </a>
+                                {% if projeto.status == 'rascunho' %}
+                                    <span class="site-card-badge badge-rascunho" style="position: static;">Rascunho</span>
+                                {% elif projeto.status == 'publicado' %}
+                                    <span class="site-card-badge badge-publicado" style="position: static;">Publicado</span>
+                                {% else %}
+                                    <span class="site-card-badge badge-arquivado" style="position: static;">Arquivado</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 0.8125rem; color: var(--painel-text-muted);">
+                                /{{ projeto.slug }} &bull; {{ projeto.get_tipo_display }} &bull; Atualizado {{ projeto.atualizado_em|naturaltime }}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'painel:site_detalhe' projeto.uuid %}" class="btn btn-secondary btn-sm">
+                                Abrir
+                            </a>
+                            <a href="{% url 'painel:site_editar' projeto.uuid %}" class="btn btn-secondary btn-sm">
+                                Editar
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state" style="padding: 2.5rem 1.5rem;">
+                <div class="empty-state-icon" style="width: 48px; height: 48px; font-size: 1.25rem; margin-bottom: 1rem;">🌐</div>
+                <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Este cliente ainda não possui sites</h3>
+                <p class="empty-state-desc" style="margin-bottom: 1.25rem;">Crie o primeiro BioSite ou página profissional vinculado a esta marca.</p>
+                {% if cliente.status == 'ativo' %}
+                    <a href="{% url 'painel:site_novo' %}?cliente={{ cliente.uuid }}" class="btn btn-primary btn-sm">
+                        + Criar Primeiro Site
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Coluna Direita: Dados Cadastrais -->
+    <div>
+        <div class="detail-card">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
+                Dados do Cliente
+            </h3>
+
+            <div class="detail-item">
+                <div class="detail-label">E-mail</div>
+                <div class="detail-val">{{ cliente.email|default:"Não informado" }}</div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">Telefone</div>
+                <div class="detail-val">{{ cliente.telefone|default:"Não informado" }}</div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">WhatsApp</div>
+                <div class="detail-val">
+                    {% if cliente.whatsapp %}
+                        <a href="https://wa.me/{{ cliente.whatsapp }}" target="_blank" style="color: #10b981; text-decoration: none;">
+                            {{ cliente.whatsapp }} ↗
+                        </a>
+                    {% else %}
+                        Não informado
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">Documento (CPF/CNPJ)</div>
+                <div class="detail-val">{{ cliente.documento|default:"Não informado" }}</div>
+            </div>
+
+            {% if cliente.observacoes %}
+                <div class="detail-item">
+                    <div class="detail-label">Observações</div>
+                    <div class="detail-val" style="font-size: 0.875rem; color: var(--painel-text-muted); white-space: pre-line;">
+                        {{ cliente.observacoes }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="detail-item" style="border-top: 1px solid var(--painel-border); padding-top: 1rem; margin-top: 1.5rem;">
+                <div class="detail-label">Cadastrado em</div>
+                <div class="detail-val" style="font-size: 0.8125rem; color: var(--painel-text-muted);">
+                    {{ cliente.criado_em|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

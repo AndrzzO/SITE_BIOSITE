@@ -17,7 +17,8 @@
                     BioSite <span>NFC</span>
                 </a>
                 <nav class="topbar-nav" aria-label="Navegação Principal">
-                    <a href="{% url 'painel:sites' %}" class="nav-link active">Meus Sites</a>
+                    <a href="{% url 'painel:sites' %}" class="nav-link {% if 'sites' in request.path or request.path == '/painel/' %}active{% endif %}">Meus Sites</a>
+                    <a href="{% url 'painel:clientes_lista' %}" class="nav-link {% if 'clientes' in request.path %}active{% endif %}">Clientes</a>
                 </nav>
             </div>
 
@@ -36,6 +37,16 @@
         </header>
 
         <main class="workspace-main">
+            {% if messages %}
+                <div style="margin-bottom: 1.5rem;">
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" role="alert">
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             {% block content %}{% endblock %}
         </main>
     </div>

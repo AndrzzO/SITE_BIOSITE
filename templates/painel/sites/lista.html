@@ -1,4 +1,5 @@
 {% extends "painel/base.html" %}
+{% load humanize %}
 
 {% block title %}Meus Sites — Workspace BioSite NFC{% endblock %}
 
@@ -7,42 +8,113 @@
     <div>
         <h1 class="workspace-title">Meus Sites</h1>
         <p class="workspace-subtitle">
-            Gerencie, edite e publique seus projetos de BioSites e páginas integradas a NFC.
+            Gerencie, edite e publique seus projetos de BioSites e páginas digitais com tecnologia NFC.
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-disabled" disabled title="Criação de novos projetos estará disponível no Prompt 3">
+        <a href="{% url 'painel:site_novo' %}" class="btn btn-primary">
             + Novo Site
-            <span class="tag-aviso">Disponível no Prompt 3</span>
-        </button>
+        </a>
     </div>
+</div>
+
+<div class="toolbar">
+    <div class="filter-pills">
+        <a href="?status=ativos{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'ativos' or not status_atual %}active{% endif %}">
+            Ativos
+        </a>
+        <a href="?status=arquivados{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'arquivados' %}active{% endif %}">
+            Arquivados
+        </a>
+        <a href="?status=todos{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'todos' %}active{% endif %}">
+            Todos
+        </a>
+    </div>
+
+    <form method="get" class="search-form">
+        {% if status_atual %}
+            <input type="hidden" name="status" value="{{ status_atual }}">
+        {% endif %}
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por site, cliente ou slug..." class="form-input" style="padding: 0.45rem 0.75rem;">
+        <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+        {% if q %}
+            <a href="{% url 'painel:sites' %}" class="btn btn-secondary btn-sm" title="Limpar busca">&times;</a>
+        {% endif %}
+    </form>
 </div>
 
 {% if sites %}
     <div class="sites-grid">
-        {# O layout dos cards reais será ativado e preenchido no Prompt 3 com o model ProjetoSite #}
         {% for site in sites %}
             <div class="site-card">
-                <h3>{{ site.nome }}</h3>
+                <div class="site-card-thumb">
+                    {% if site.tipo == 'biosite' %}
+                        📱
+                    {% else %}
+                        🌐
+                    {% endif %}
+                    {% if site.status == 'rascunho' %}
+                        <span class="site-card-badge badge-rascunho">Rascunho</span>
+                    {% elif site.status == 'publicado' %}
+                        <span class="site-card-badge badge-publicado">Publicado</span>
+                    {% else %}
+                        <span class="site-card-badge badge-arquivado">Arquivado</span>
+                    {% endif %}
+                </div>
+
+                <div class="site-card-body">
+                    <a href="{% url 'painel:site_detalhe' site.uuid %}" style="text-decoration: none;">
+                        <h2 class="site-card-title">{{ site.nome }}</h2>
+                    </a>
+                    <div class="site-card-client">
+                        Cliente: <strong>{{ site.cliente.nome }}</strong>
+                    </div>
+
+                    <div class="site-card-meta">
+                        <span>Atualizado {{ site.atualizado_em|naturaltime }}</span>
+                        <div style="display: flex; gap: 0.375rem;">
+                            <a href="{% url 'painel:site_detalhe' site.uuid %}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                Abrir
+                            </a>
+                            <form method="post" action="{% url 'painel:site_duplicar' site.uuid %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Duplicar projeto">
+                                    Duplicar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         {% endfor %}
     </div>
+
+    {% if is_paginated %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}" class="page-btn">&laquo; Anterior</a>
+            {% endif %}
+            <span class="page-btn active">{{ page_obj.number }} de {{ paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}" class="page-btn">Próxima &raquo;</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
 {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon" aria-hidden="true">
-            🌐
-        </div>
-        <h2 class="empty-state-title">Você ainda não criou nenhum site</h2>
-        <p class="empty-state-desc">
-            Seus projetos comerciais e BioSites aparecerão aqui organizados em cards visuais,
-            com indicadores de publicação, links públicos e gerenciamento de cartões NFC.
-        </p>
-        <div>
-            <button type="button" class="btn btn-disabled" disabled>
-                + Criar Primeiro Projeto
-                <span class="tag-aviso">Prompt 3</span>
-            </button>
-        </div>
+        <div class="empty-state-icon">🌐</div>
+        {% if q or status_atual != 'ativos' and status_atual %}
+            <h2 class="empty-state-title">Nenhum site encontrado</h2>
+            <p class="empty-state-desc">Nenhum projeto corresponde aos critérios de busca ou filtro ativos.</p>
+            <a href="{% url 'painel:sites' %}" class="btn btn-secondary">Limpar Filtros</a>
+        {% else %}
+            <h2 class="empty-state-title">Você ainda não criou nenhum site</h2>
+            <p class="empty-state-desc">
+                Crie seu primeiro projeto para começar. Cada site é associado a um cliente comercial e preparado para acesso mobile via NFC e QR Code.
+            </p>
+            <a href="{% url 'painel:site_novo' %}" class="btn btn-primary">+ Criar Primeiro Site</a>
+        {% endif %}
     </div>
 {% endif %}
 {% endblock %}

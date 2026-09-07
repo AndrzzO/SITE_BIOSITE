@@ -1,0 +1,134 @@
+{% extends "painel/base.html" %}
+
+{% block title %}{{ titulo_pagina }} — BioSite NFC{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Navegação Estrutural">
+    <a href="{% url 'painel:sites' %}">Painel</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'painel:clientes_lista' %}">Clientes</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>{{ titulo_pagina }}</span>
+</nav>
+
+<div class="workspace-header">
+    <div>
+        <h1 class="workspace-title">{{ titulo_pagina }}</h1>
+        <p class="workspace-subtitle">Preencha os dados cadastrais do cliente comercial.</p>
+    </div>
+</div>
+
+<div class="detail-card" style="max-width: 680px;">
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="{{ form.nome.id_for_label }}" class="form-label">
+                {{ form.nome.label }} <span style="color: var(--painel-danger);">*</span>
+            </label>
+            {{ form.nome }}
+            {% if form.nome.help_text %}
+                <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.nome.help_text }}</small>
+            {% endif %}
+            {% if form.nome.errors %}
+                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                    {{ form.nome.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.nome_fantasia.id_for_label }}" class="form-label">
+                {{ form.nome_fantasia.label }}
+            </label>
+            {{ form.nome_fantasia }}
+            {% if form.nome_fantasia.errors %}
+                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                    {{ form.nome_fantasia.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}" class="form-label">
+                    {{ form.email.label }}
+                </label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.email.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.documento.id_for_label }}" class="form-label">
+                    {{ form.documento.label }}
+                </label>
+                {{ form.documento }}
+                {% if form.documento.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.documento.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="{{ form.telefone.id_for_label }}" class="form-label">
+                    {{ form.telefone.label }}
+                </label>
+                {{ form.telefone }}
+                {% if form.telefone.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.telefone.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.whatsapp.id_for_label }}" class="form-label">
+                    {{ form.whatsapp.label }}
+                </label>
+                {{ form.whatsapp }}
+                {% if form.whatsapp.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.whatsapp.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                {{ form.observacoes.label }}
+            </label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}
+                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                    {{ form.observacoes.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">
+                Salvar Cliente
+            </button>
+            <a href="{% if cliente %}{% url 'painel:cliente_detalhe' cliente.uuid %}{% else %}{% url 'painel:clientes_lista' %}{% endif %}" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

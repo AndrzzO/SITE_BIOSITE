@@ -1,0 +1,125 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Clientes — BioSite NFC{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+    <div>
+        <h1 class="workspace-title">Clientes</h1>
+        <p class="workspace-subtitle">
+            Gerencie os clientes comerciais e marcas proprietárias dos BioSites.
+        </p>
+    </div>
+    <div>
+        <a href="{% url 'painel:cliente_novo' %}" class="btn btn-primary">
+            + Novo Cliente
+        </a>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="filter-pills">
+        <a href="?status=ativo{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'ativo' or not status_atual %}active{% endif %}">
+            Ativos
+        </a>
+        <a href="?status=arquivado{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'arquivado' %}active{% endif %}">
+            Arquivados
+        </a>
+        <a href="?status={% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == '' and request.GET.status == '' %}active{% endif %}">
+            Todos
+        </a>
+    </div>
+
+    <form method="get" class="search-form">
+        {% if status_atual %}
+            <input type="hidden" name="status" value="{{ status_atual }}">
+        {% endif %}
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nome, e-mail, telefone..." class="form-input" style="padding: 0.45rem 0.75rem;">
+        <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+        {% if q %}
+            <a href="{% url 'painel:clientes_lista' %}" class="btn btn-secondary btn-sm" title="Limpar busca">&times;</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if clientes %}
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome / Marca</th>
+                    <th>Contato Principal</th>
+                    <th>WhatsApp / Tel</th>
+                    <th>Projetos</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'painel:cliente_detalhe' cliente.uuid %}" style="color: var(--painel-text); font-weight: 600; text-decoration: none;">
+                                {{ cliente.nome }}
+                            </a>
+                            {% if cliente.nome_fantasia %}
+                                <div style="font-size: 0.75rem; color: var(--painel-text-muted);">
+                                    {{ cliente.nome_fantasia }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ cliente.email|default:"—" }}</td>
+                        <td>{{ cliente.whatsapp|default:cliente.telefone|default:"—" }}</td>
+                        <td>
+                            <span style="font-weight: 600; color: var(--painel-accent);">
+                                {{ cliente.total_projetos }} site{{ cliente.total_projetos|pluralize }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if cliente.status == 'ativo' %}
+                                <span class="site-card-badge badge-publicado" style="position: static;">Ativo</span>
+                            {% else %}
+                                <span class="site-card-badge badge-arquivado" style="position: static;">Arquivado</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <a href="{% url 'painel:cliente_detalhe' cliente.uuid %}" class="btn btn-secondary btn-sm">
+                                Detalhes
+                            </a>
+                            <a href="{% url 'painel:cliente_editar' cliente.uuid %}" class="btn btn-secondary btn-sm">
+                                Editar
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}" class="page-btn">&laquo; Anterior</a>
+            {% endif %}
+            <span class="page-btn active">{{ page_obj.number }} de {{ paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}" class="page-btn">Próxima &raquo;</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">👥</div>
+        {% if q or status_atual %}
+            <h2 class="empty-state-title">Nenhum cliente encontrado</h2>
+            <p class="empty-state-desc">Nenhum cliente corresponde aos termos ou filtros pesquisados.</p>
+            <a href="{% url 'painel:clientes_lista' %}" class="btn btn-secondary">Limpar Filtros</a>
+        {% else %}
+            <h2 class="empty-state-title">Nenhum cliente cadastrado</h2>
+            <p class="empty-state-desc">Cadastre seu primeiro cliente comercial para iniciar a criação dos seus BioSites.</p>
+            <a href="{% url 'painel:cliente_novo' %}" class="btn btn-primary">+ Cadastrar Primeiro Cliente</a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

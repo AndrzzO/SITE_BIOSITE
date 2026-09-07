@@ -27,6 +27,7 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
 ]
 
 # Aplicações de terceiros
@@ -36,6 +37,8 @@ THIRD_PARTY_APPS: list[str] = []
 LOCAL_APPS = [
     "aplicativos.core.apps.CoreConfig",
     "aplicativos.administracao.apps.AdministracaoConfig",
+    "aplicativos.clientes.apps.ClientesConfig",
+    "aplicativos.sites.apps.SitesConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

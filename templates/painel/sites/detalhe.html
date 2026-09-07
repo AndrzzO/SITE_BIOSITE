@@ -1,0 +1,146 @@
+{% extends "painel/base.html" %}
+{% load humanize %}
+
+{% block title %}{{ site.nome }} — Detalhes do Projeto{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Navegação Estrutural">
+    <a href="{% url 'painel:sites' %}">Meus Sites</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>{{ site.nome }}</span>
+</nav>
+
+<div class="workspace-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <h1 class="workspace-title">{{ site.nome }}</h1>
+            {% if site.status == 'rascunho' %}
+                <span class="site-card-badge badge-rascunho" style="position: static;">Rascunho</span>
+            {% elif site.status == 'publicado' %}
+                <span class="site-card-badge badge-publicado" style="position: static;">Publicado</span>
+            {% else %}
+                <span class="site-card-badge badge-arquivado" style="position: static;">Arquivado</span>
+            {% endif %}
+        </div>
+        <p class="workspace-subtitle">
+            Cliente: <a href="{% url 'painel:cliente_detalhe' site.cliente.uuid %}" style="color: var(--painel-accent); text-decoration: none; font-weight: 600;">{{ site.cliente.nome }}</a> &bull; Endereço planejado: <code>/{{ site.slug }}</code>
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'painel:site_editar' site.uuid %}" class="btn btn-secondary">
+            Editar Informações
+        </a>
+
+        <form method="post" action="{% url 'painel:site_duplicar' site.uuid %}" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">
+                Duplicar Projeto
+            </button>
+        </form>
+
+        {% if site.status != 'arquivado' %}
+            <form method="post" action="{% url 'painel:site_arquivar' site.uuid %}" style="margin: 0;" onsubmit="return confirm('Deseja realmente arquivar este projeto de site?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">
+                    Arquivar
+                </button>
+            </form>
+        {% else %}
+            <form method="post" action="{% url 'painel:site_restaurar' site.uuid %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">
+                    Restaurar
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+    <!-- Coluna Esquerda: Placeholder Transparente do Editor Visual (Prompt 4) -->
+    <div>
+        <div class="detail-card" style="text-align: center; padding: 3rem 2rem; background: linear-gradient(180deg, #151d30 0%, #0b0f19 100%);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(56, 189, 248, 0.1); color: var(--painel-accent); font-size: 1.75rem; margin-bottom: 1.25rem;">
+                🎨
+            </div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--painel-text);">
+                Editor Visual & Motor Estrutural
+            </h2>
+            <p style="color: var(--painel-text-muted); font-size: 0.9375rem; max-width: 500px; margin: 0 auto 2rem; line-height: 1.6;">
+                A arquitetura de páginas, seções, blocos e o canvas de edição interativo estilo Google Sites + Canva deste BioSite serão implementados na próxima etapa (Prompt 4).
+            </p>
+
+            <!-- Mockup representativo da filosofia Smartphone-First (390px) -->
+            <div style="max-width: 390px; margin: 0 auto; border: 2px dashed var(--painel-border); border-radius: 28px; padding: 2rem 1.5rem; background-color: rgba(11, 15, 25, 0.7);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--painel-accent); font-weight: 700; margin-bottom: 0.75rem;">
+                    Preview Mobile-First (390px)
+                </div>
+                <div style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">{{ site.nome }}</div>
+                <div style="font-size: 0.8125rem; color: var(--painel-text-muted); margin-bottom: 1.5rem;">{{ site.get_tipo_display }} &bull; /{{ site.slug }}</div>
+                <div style="display: inline-block; padding: 0.375rem 0.875rem; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: var(--painel-accent); font-size: 0.75rem; font-weight: 600;">
+                    Pronto para receber componentes no Prompt 4
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna Direita: Metadados do Projeto -->
+    <div>
+        <div class="detail-card">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
+                Dados Administrativos
+            </h3>
+
+            <div class="detail-item">
+                <div class="detail-label">Cliente Proprietário</div>
+                <div class="detail-val">
+                    <a href="{% url 'painel:cliente_detalhe' site.cliente.uuid %}" style="color: var(--painel-accent); text-decoration: none;">
+                        {{ site.cliente.nome }} ↗
+                    </a>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">Tipo de Projeto</div>
+                <div class="detail-val">{{ site.get_tipo_display }}</div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">Slug de Acesso</div>
+                <div class="detail-val">
+                    <code>/{{ site.slug }}</code>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">Status Atual</div>
+                <div class="detail-val">{{ site.get_status_display }}</div>
+            </div>
+
+            {% if site.descricao_interna %}
+                <div class="detail-item">
+                    <div class="detail-label">Notas Administrativas</div>
+                    <div class="detail-val" style="font-size: 0.875rem; color: var(--painel-text-muted); white-space: pre-line;">
+                        {{ site.descricao_interna }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="detail-item" style="border-top: 1px solid var(--painel-border); padding-top: 1rem; margin-top: 1.5rem;">
+                <div class="detail-label">Criado em</div>
+                <div class="detail-val" style="font-size: 0.8125rem; color: var(--painel-text-muted);">
+                    {{ site.criado_em|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">Última Modificação</div>
+                <div class="detail-val" style="font-size: 0.8125rem; color: var(--painel-text-muted);">
+                    {{ site.atualizado_em|naturaltime }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

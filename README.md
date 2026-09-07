@@ -270,11 +270,39 @@ BIOSITE (Produto Comercial Final):
 
 ### 8.5 Workspace "Meus Sites"
 - Rota: `/painel/sites/` (com redirecionamento automático a partir de `/painel/`).
-- Layout estruturado no padrão Google Sites / Canva, exibindo estado vazio informativo e preparando o grid responsivo para o recebimento do modelo `ProjetoSite` no Prompt 3.
+- Layout estruturado no padrão Google Sites / Canva, exibindo cards reais, busca no backend, filtros por status e paginação.
 
 ---
 
-## 9. Qualidade de Código e Lint
+## 9. Clientes, Projetos de Site e Workspace Funcional (Prompt 3)
+
+### 9.1 Modelo `Cliente` (`aplicativos/clientes/`)
+- Representa a entidade comercial compradora ou beneficiária dos sites.
+- **Não é usuário do Django:** não possui credenciais, nem acesso ao painel de administração.
+- **Campos:** `nome` (*único campo obrigatório*), `nome_fantasia`, `email`, `telefone`, `whatsapp`, `documento` (CPF/CNPJ opcional), `observacoes`, `status` (`ATIVO` / `ARQUIVADO`) e `arquivado_em`.
+- **Integridade:** Exclusão protegida (`PROTECT`) — clientes com projetos vinculados não podem ser deletados acidentalmente via cascata.
+- **CRUD Completo:** Listagem paginada (`/painel/clientes/`), cadastro com atalho para novo site (`/painel/clientes/novo/`), página de detalhes com lista de projetos associados e botão de arquivamento/restauração via `POST`.
+
+### 9.2 Modelo `ProjetoSite` (`aplicativos/sites/`)
+- Objeto central do construtor de sites e BioSites.
+- **Campos:** `cliente` (FK obrigatória com `PROTECT`), `nome`, `slug` (único, validado contra palavras reservadas), `tipo` (`BIOSITE` por padrão, `LANDING_PAGE`, `SITE`, `PORTFOLIO`, `CARDAPIO`, `OUTRO`), `status` (`RASCUNHO` por padrão, `PUBLICADO`, `ARQUIVADO`, `SUSPENSO`), `descricao_interna`, `thumbnail` (com fallback neutro) e `arquivado_em`.
+- **Sem Funcionalidades Falsas:** O status `PUBLICADO` existe no enum, mas a interface não permite publicar diretamente sem o motor de compilação/publicação real (previsto para etapas posteriores).
+
+### 9.3 Serviços de Domínio (`aplicativos/sites/servicos.py`)
+- **Geração e Normalização de Slugs:** Gera slugs a partir do nome via `slugify`, resolve colisões sequenciais (`-2`, `-3`) e impede palavras reservadas (`admin`, `painel`, `login`, `static`, etc.).
+- **Duplicação Atômica de Projetos:** Executa `duplicar_projeto()` dentro de `transaction.atomic()`, copiando cliente, tipo e notas com novo ID, novo UUID, novo slug derivado (`-copia`), timestamps renovados e status forçado para `RASCUNHO`.
+
+### 9.4 Decisão de Banco de Dados: SQLite na Fase Atual
+- O SQLite local (`db.sqlite3`) é utilizado nesta etapa por simplicidade, agilidade e ausência de concorrência (ferramenta de operador único).
+- A arquitetura dos models é 100% portável e pronta para PostgreSQL via `DATABASE_URL` quando a escala do produto exigir.
+
+### 9.5 Decisão sobre Agendamentos
+- A plataforma **não implementa sistema próprio de agendamento/calendário** no banco.
+- O futuro componente de agendamento nos BioSites integrará diretamente com serviços consolidados de terceiros, com o **Google Agenda** como primeira opção via link externo.
+
+---
+
+## 10. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -288,12 +316,12 @@ ruff format .
 
 ---
 
-## 10. Próximas Etapas (Prompts 3 a 12)
+## 11. Próximas Etapas (Prompts 4 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
-3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional
-4. **Prompt 4:** BioSites
+3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional *(Concluído)*
+4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos
 5. **Prompt 5:** Componentes dos BioSites
 6. **Prompt 6:** Editor Visual
 7. **Prompt 7:** Temas e Design System

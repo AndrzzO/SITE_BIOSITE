@@ -1,0 +1,117 @@
+{% extends "painel/base.html" %}
+
+{% block title %}{{ titulo_pagina }} — BioSite NFC{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Navegação Estrutural">
+    <a href="{% url 'painel:sites' %}">Meus Sites</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>{{ titulo_pagina }}</span>
+</nav>
+
+<div class="workspace-header">
+    <div>
+        <h1 class="workspace-title">{{ titulo_pagina }}</h1>
+        <p class="workspace-subtitle">Configure as informações administrativas e o endereço do projeto.</p>
+    </div>
+</div>
+
+<div class="detail-card" style="max-width: 680px;">
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}
+                    <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label for="{{ form.cliente.id_for_label }}" class="form-label" style="margin-bottom: 0;">
+                    {{ form.cliente.label }} <span style="color: var(--painel-danger);">*</span>
+                </label>
+                <a href="{% url 'painel:cliente_novo' %}?proximo=novo_site" style="font-size: 0.8125rem; color: var(--painel-accent); text-decoration: none;">
+                    + Cadastrar Novo Cliente
+                </a>
+            </div>
+            {{ form.cliente }}
+            {% if form.cliente.help_text %}
+                <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.cliente.help_text }}</small>
+            {% endif %}
+            {% if form.cliente.errors %}
+                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                    {{ form.cliente.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.nome.id_for_label }}" class="form-label">
+                {{ form.nome.label }} <span style="color: var(--painel-danger);">*</span>
+            </label>
+            {{ form.nome }}
+            {% if form.nome.help_text %}
+                <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.nome.help_text }}</small>
+            {% endif %}
+            {% if form.nome.errors %}
+                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                    {{ form.nome.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="{{ form.slug.id_for_label }}" class="form-label">
+                    {{ form.slug.label }}
+                </label>
+                {{ form.slug }}
+                {% if form.slug.help_text %}
+                    <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.slug.help_text }}</small>
+                {% endif %}
+                {% if form.slug.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.slug.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                    {{ form.tipo.label }}
+                </label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.tipo.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.descricao_interna.id_for_label }}" class="form-label">
+                {{ form.descricao_interna.label }}
+            </label>
+            {{ form.descricao_interna }}
+            {% if form.descricao_interna.errors %}
+                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                    {{ form.descricao_interna.errors|striptags }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">
+                Salvar Projeto
+            </button>
+            <a href="{% if site %}{% url 'painel:site_detalhe' site.uuid %}{% else %}{% url 'painel:sites' %}{% endif %}" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

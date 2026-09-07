@@ -186,7 +186,7 @@ class AutenticacaoPrivadaTests(TestCase):
         self.assertRedirects(resposta, reverse("painel:sites"))
 
     def test_workspace_exibe_estado_vazio_quando_sem_projetos(self):
-        """Workspace Meus Sites exibe estado vazio limpo com aviso do Prompt 3."""
+        """Workspace Meus Sites exibe estado vazio limpo com botão de novo site."""
         self.client.force_login(self.admin_user)
         url = reverse("painel:sites")
         resposta = self.client.get(url)
@@ -194,7 +194,7 @@ class AutenticacaoPrivadaTests(TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "Meus Sites")
         self.assertContains(resposta, "Você ainda não criou nenhum site")
-        self.assertContains(resposta, "Disponível no Prompt 3")
+        self.assertContains(resposta, "Novo Site")
 
     def test_rate_limiting_bloqueia_apos_exceder_limite(self):
         """Exceder MAX_TENTATIVAS bloqueia tentativas subsequentes de login."""
