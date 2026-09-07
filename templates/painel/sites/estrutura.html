@@ -1,0 +1,242 @@
+{% extends "painel/base.html" %}
+{% load humanize %}
+
+{% block title %}{{ site.nome }} — Motor Estrutural{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Navegação Estrutural">
+    <a href="{% url 'painel:sites' %}">Meus Sites</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'painel:site_detalhe' site.uuid %}">{{ site.nome }}</a>
+    <span class="breadcrumb-separator">/</span>
+    <span>Estrutura Relacional</span>
+</nav>
+
+<div class="workspace-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <h1 class="workspace-title">Estrutura do Site</h1>
+            {% if site.status == 'rascunho' %}
+                <span class="site-card-badge badge-rascunho" style="position: static;">Rascunho</span>
+            {% elif site.status == 'publicado' %}
+                <span class="site-card-badge badge-publicado" style="position: static;">Publicado</span>
+            {% else %}
+                <span class="site-card-badge badge-arquivado" style="position: static;">Arquivado</span>
+            {% endif %}
+        </div>
+        <p class="workspace-subtitle">
+            Projeto: <strong>{{ site.nome }}</strong> &bull; Cliente: <strong>{{ site.cliente.nome }}</strong> &bull; Hierarquia: Páginas &rarr; Seções &rarr; Containers &rarr; Elementos
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'painel:site_estrutura_json' site.uuid %}" target="_blank" class="btn btn-secondary" style="font-family: monospace; font-size: 0.8125rem;">
+            { } Ver JSON da Árvore
+        </a>
+        <a href="{% url 'painel:site_detalhe' site.uuid %}" class="btn btn-secondary">
+            &larr; Voltar aos Detalhes
+        </a>
+    </div>
+</div>
+
+{% if anomalias %}
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+        <h4 style="color: #f87171; margin-bottom: 0.5rem; font-size: 0.9375rem; font-weight: 700;">⚠️ Inconsistências Detectadas na Auditoria Estrutural:</h4>
+        <ul style="margin: 0; padding-left: 1.25rem; color: var(--painel-text-muted); font-size: 0.875rem;">
+            {% for anomalia in anomalias %}
+                <li>{{ anomalia }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<!-- Form de Criação de Nova Página -->
+<div class="detail-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+    <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span>📄</span> Adicionar Nova Página ao Projeto
+    </h3>
+    <form method="post" action="{% url 'painel:site_estrutura_pagina_criar' site.uuid %}" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        {% csrf_token %}
+        <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; font-size: 0.8125rem; color: var(--painel-text-muted); margin-bottom: 0.35rem;">Título da Página</label>
+            <input type="text" name="titulo" required placeholder="Ex: Sobre Nós, Catálogo, Contato" class="form-input" style="width: 100%; padding: 0.5rem 0.75rem; background: var(--painel-bg); border: 1px solid var(--painel-border); border-radius: 6px; color: var(--painel-text);">
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+            <label style="display: block; font-size: 0.8125rem; color: var(--painel-text-muted); margin-bottom: 0.35rem;">Slug Personalizado (opcional)</label>
+            <input type="text" name="slug" placeholder="sobre, catalogo (deixe vazio para auto)" class="form-input" style="width: 100%; padding: 0.5rem 0.75rem; background: var(--painel-bg); border: 1px solid var(--painel-border); border-radius: 6px; color: var(--painel-text);">
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1.25rem;">
+            + Criar Página
+        </button>
+    </form>
+</div>
+
+<!-- Renderização da Árvore de Páginas -->
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    {% for pagina in estrutura.paginas %}
+        <div class="detail-card" style="border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(15, 23, 42, 0.75);">
+            <!-- Cabeçalho da Página -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--painel-border); padding-bottom: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--painel-text);">
+                            📄 {{ pagina.titulo }}
+                        </h2>
+                        {% if pagina.eh_inicial %}
+                            <span style="font-size: 0.7rem; background: rgba(56, 189, 248, 0.2); color: var(--painel-accent); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600;">PÁGINA INICIAL</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--painel-text-muted); margin-top: 0.25rem;">
+                        Slug: <code>/{{ pagina.slug }}</code> &bull; ID: #{{ pagina.id }} &bull; Ordem: {{ pagina.ordem }}
+                    </div>
+                </div>
+
+                <!-- Formulário Inline: Adicionar Seção a esta Página -->
+                <form method="post" action="{% url 'painel:site_estrutura_secao_criar' site.uuid %}" style="display: flex; gap: 0.5rem; align-items: center; margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="pagina_id" value="{{ pagina.id }}">
+                    <input type="text" name="nome_interno" placeholder="Nome da nova seção" required style="padding: 0.35rem 0.65rem; font-size: 0.8125rem; background: var(--painel-bg); border: 1px solid var(--painel-border); border-radius: 4px; color: var(--painel-text);">
+                    <select name="tipo" style="padding: 0.35rem 0.5rem; font-size: 0.8125rem; background: var(--painel-bg); border: 1px solid var(--painel-border); border-radius: 4px; color: var(--painel-text);">
+                        {% for val, rotulo in tipos_secao %}
+                            <option value="{{ val }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.8125rem;">
+                        + Nova Seção
+                    </button>
+                </form>
+            </div>
+
+            <!-- Seções da Página -->
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                {% for secao in pagina.secoes %}
+                    <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--painel-border); border-radius: 8px; padding: 1.25rem;">
+                        <!-- Cabeçalho da Seção -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--painel-accent); font-weight: 700;">SEÇÃO ({{ secao.tipo }})</span>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin: 0.2rem 0; color: var(--painel-text);">
+                                    📦 {{ secao.nome_interno }}
+                                </h3>
+                                <div style="font-size: 0.75rem; color: var(--painel-text-muted);">
+                                    ID: #{{ secao.id }} &bull; Ordem: {{ secao.ordem }}
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <form method="post" action="{% url 'painel:site_estrutura_secao_duplicar' site.uuid secao.id %}" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;" title="Duplica seção e todos os seus containers/elementos">
+                                        ⎘ Duplicar Seção
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'painel:site_estrutura_secao_excluir' site.uuid secao.id %}" style="margin: 0;" onsubmit="return confirm('Deseja excluir esta seção e todos os seus elementos?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; color: #f87171;" title="Excluir seção">
+                                        ✕ Excluir
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Containers Raiz da Seção -->
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            {% for container in secao.containers %}
+                                <div style="background: rgba(15, 23, 42, 0.85); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); color: var(--painel-accent); padding: 0.15rem 0.5rem; border-radius: 4px; font-family: monospace; font-weight: 600;">
+                                                CONTAINER [{{ container.tipo_layout }}]
+                                            </span>
+                                            <span style="font-size: 0.75rem; color: var(--painel-text-muted);">
+                                                #{{ container.id }} &bull; Ordem: {{ container.ordem }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Formulário Inline: Adicionar Elemento ao Container -->
+                                        <form method="post" action="{% url 'painel:site_estrutura_elemento_criar' site.uuid %}" style="display: flex; gap: 0.4rem; align-items: center; margin: 0;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="container_id" value="{{ container.id }}">
+                                            <select name="tipo" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--painel-bg); border: 1px solid var(--painel-border); border-radius: 4px; color: var(--painel-text);">
+                                                {% for tipo_chave, definicao in tipos_elementos.items %}
+                                                    <option value="{{ tipo_chave }}">{{ definicao.nome_amigavel }} ({{ tipo_chave }})</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.65rem; font-size: 0.75rem;">
+                                                + Inserir Elemento
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Elementos dentro do Container -->
+                                    {% if container.elementos %}
+                                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                            {% for elem in container.elementos %}
+                                                <div style="background: rgba(30, 41, 59, 0.9); border: 1px solid var(--painel-border); border-radius: 4px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                                        <span style="font-size: 0.75rem; font-family: monospace; background: rgba(255, 255, 255, 0.05); padding: 0.15rem 0.4rem; border-radius: 3px; color: var(--painel-accent); font-weight: 600;">
+                                                            {{ elem.tipo }}
+                                                        </span>
+                                                        <div style="font-size: 0.8125rem; color: var(--painel-text);">
+                                                            {% if elem.tipo == 'TITULO' %}
+                                                                <strong>{{ elem.conteudo.texto|default:"(Título Vazio)" }}</strong> <span style="color: var(--painel-text-muted); font-size: 0.75rem;">&lt;{{ elem.conteudo.nivel|default:"h2" }}&gt;</span>
+                                                            {% elif elem.tipo == 'TEXTO' %}
+                                                                {{ elem.conteudo.texto|truncatechars:60|default:"(Texto Vazio)" }}
+                                                            {% elif elem.tipo == 'BOTAO' %}
+                                                                🔘 <strong>{{ elem.conteudo.texto|default:"Botão" }}</strong> &rarr; <code style="font-size: 0.75rem;">{{ elem.conteudo.url|default:"#" }}</code>
+                                                            {% elif elem.tipo == 'IMAGEM' %}
+                                                                🖼️ <code style="font-size: 0.75rem;">{{ elem.conteudo.url|truncatechars:50|default:"(Sem Imagem)" }}</code>
+                                                            {% elif elem.tipo == 'ESPACADOR' %}
+                                                                ↕️ Espaçador: {{ elem.conteudo.altura_px|default:24 }}px
+                                                            {% elif elem.tipo == 'ICONE' %}
+                                                                ⭐ Ícone: {{ elem.conteudo.icone|default:"estrela" }}
+                                                            {% else %}
+                                                                Elemento {{ elem.tipo }}
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                                        <form method="post" action="{% url 'painel:site_estrutura_elemento_duplicar' site.uuid elem.id %}" style="margin: 0;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;" title="Duplicar elemento">
+                                                                ⎘ Duplicar
+                                                            </button>
+                                                        </form>
+                                                        <form method="post" action="{% url 'painel:site_estrutura_elemento_excluir' site.uuid elem.id %}" style="margin: 0;" onsubmit="return confirm('Excluir este elemento?');">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; color: #f87171;" title="Excluir elemento">
+                                                                ✕
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div style="text-align: center; padding: 1rem; color: var(--painel-text-muted); font-size: 0.8125rem; font-style: italic;">
+                                            Container vazio. Use o botão acima para adicionar elementos (Título, Texto, Botão, Imagem, Espaçador, Ícone).
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <div style="text-align: center; padding: 1rem; color: var(--painel-text-muted); font-size: 0.8125rem;">
+                                    Nenhum container nesta seção.
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div style="text-align: center; padding: 2rem; color: var(--painel-text-muted); font-size: 0.875rem;">
+                        Esta página ainda não possui seções cadastradas.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="detail-card" style="text-align: center; padding: 3rem 2rem;">
+            <p style="color: var(--painel-text-muted);">Nenhuma página encontrada para este projeto.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

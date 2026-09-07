@@ -302,7 +302,34 @@ BIOSITE (Produto Comercial Final):
 
 ---
 
-## 10. Qualidade de Código e Lint
+## 10. Motor Estrutural de Páginas, Seções, Containers e Elementos (Prompt 4)
+
+A arquitetura do construtor de BioSites estrutura cada projeto em entidades relacionais reais no banco de dados:
+```text
+Cliente ──> ProjetoSite ──> PaginaSite ──> SecaoSite ──> ContainerSite ──> ElementoSite
+```
+
+### 10.1 Modelos Estruturais (`aplicativos/sites/models.py`)
+- **`PaginaSite`:** Representa páginas do site. Possui restrição de unicidade para o slug dentro do projeto (`unique_pagina_slug_por_projeto`) e restrição de página inicial única por projeto (`unique_pagina_inicial_por_projeto`).
+- **`SecaoSite`:** Divisão vertical da página (`NORMAL`, `ALTURA_MINIMA`, `TELA_CHEIA`).
+- **`ContainerSite`:** Gerenciador de layout (`STACK`, `ROW`, `GRID`, `OVERLAY`) com suporte a aninhamento seguro de até 3 níveis de profundidade, validação de ciclos e proibição de parentes em seções diferentes.
+- **`ElementoSite`:** Unidade atômica de conteúdo. Utiliza `conteudo` (JSONField validado pelo schema do tipo) e `estilos` (JSONField com allowlist mobile-first: `{"base": {...}, "desktop": {...}}`).
+
+### 10.2 Registry Extensível e Desacoplado (`aplicativos/sites/elementos/`)
+- Singleton `RegistroElementos` elimina blocos condicionais monolíticos.
+- Definições implementadas: `TITULO`, `TEXTO`, `BOTAO`, `IMAGEM`, `ESPACADOR`, `ICONE`.
+- Sanitização automática contra XSS (`escape`) e bloqueio estrito de protocolos inseguros (`javascript:`, `data:`).
+
+### 10.3 Serviços de Domínio e Duplicação Profunda (`aplicativos/sites/servicos_estrutura.py`)
+- **Criação Idempotente de Página Inicial:** `garantir_pagina_inicial(projeto)` garante que todo projeto possua a página `Início` com seção e container padrão.
+- **Reordenação Atômica:** `reordenar_entidades()` utiliza passos de 10 validando parentesco.
+- **Duplicação Profunda:** `duplicar_elemento()`, `duplicar_secao()`, `duplicar_pagina()` e `duplicar_projeto_completo()` clonam recursivamente toda a árvore estrutural com novos IDs, UUIDs, timestamps e status forçado para `RASCUNHO`.
+- **Serialização Otimizada:** `obter_estrutura_projeto()` executa apenas 5 queries fixas com prefetch aninhado, eliminando completamente o problema N+1.
+- **Auditoria de Integridade:** `auditar_integridade_projeto()` detecta anomalias como ausência de página inicial ou cruzamento de seções.
+
+---
+
+## 11. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -316,17 +343,18 @@ ruff format .
 
 ---
 
-## 11. Próximas Etapas (Prompts 4 a 12)
+## 12. Próximas Etapas (Prompts 5 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
 3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional *(Concluído)*
-4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos
-5. **Prompt 5:** Componentes dos BioSites
-6. **Prompt 6:** Editor Visual
-7. **Prompt 7:** Temas e Design System
+4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos *(Concluído)*
+5. **Prompt 5:** Editor Visual Mobile-First
+6. **Prompt 6:** Componentes e Blocos Específicos de BioSite
+7. **Prompt 7:** Temas, Tipografia e Design System
 8. **Prompt 8:** Integração e Redirecionamento NFC
-9. **Prompt 9:** QR Code
-10. **Prompt 10:** Analytics e Telemetria
+9. **Prompt 9:** QR Code Dinâmico e Exportação
+10. **Prompt 10:** Analytics e Telemetria de Visitas
 11. **Prompt 11:** Hardening, Performance e Preparação para Produção
 12. **Prompt 12:** Auditoria e Testes Finais
+

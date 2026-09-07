@@ -83,6 +83,9 @@ class ProjetoSiteCreateView(RequerAutenticacaoAdministrativaMixin, CreateView):
 
     def form_valid(self, form: ProjetoSiteCriacaoForm) -> HttpResponse:
         response = super().form_valid(form)
+        from .servicos_estrutura import garantir_pagina_inicial
+
+        garantir_pagina_inicial(self.object)
         messages.success(self.request, f"Projeto '{self.object.nome}' criado com sucesso!")
         return response
 

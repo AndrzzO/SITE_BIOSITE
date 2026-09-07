@@ -3,7 +3,6 @@
 import logging
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
@@ -87,37 +86,11 @@ def gerar_slug_unico(
 
 def duplicar_projeto(projeto_original: ProjetoSite) -> ProjetoSite:
     """
-    Cria uma cópia administrativa independente de um projeto de site.
+    Cria uma cópia administrativa independente e profunda de um projeto de site.
 
-    REGRAS DE DUPLICAÇÃO:
-    - Execução atômica dentro de transação.
-    - Novo ID, novo UUID imutável e novas datas.
-    - Status forçado obrigatoriamente para RASCUNHO.
-    - Novo slug único derivado com sufixo '-copia'.
+    Duplica atomicamente o projeto e toda a sua árvore estrutural (páginas,
+    seções, containers e elementos) gerando novos IDs, UUIDs e status RASCUNHO.
     """
-    with transaction.atomic():
-        slug_base = f"{projeto_original.slug}-copia"
-        novo_slug = gerar_slug_unico(
-            nome=f"{projeto_original.nome} Copia",
-            slug_sugerido=slug_base,
-        )
+    from .servicos_estrutura import duplicar_projeto_completo
 
-        novo_projeto = ProjetoSite.objects.create(
-            cliente=projeto_original.cliente,
-            nome=f"Cópia de {projeto_original.nome}",
-            slug=novo_slug,
-            tipo=projeto_original.tipo,
-            status=ProjetoSite.Status.RASCUNHO,
-            descricao_interna=projeto_original.descricao_interna,
-            thumbnail=projeto_original.thumbnail if projeto_original.thumbnail else None,
-        )
-
-        logger.info(
-            "Projeto '%s' (UUID %s) duplicado com sucesso para '%s' (UUID %s)",
-            projeto_original.nome,
-            projeto_original.uuid,
-            novo_projeto.nome,
-            novo_projeto.uuid,
-        )
-
-        return novo_projeto
+    return duplicar_projeto_completo(projeto_original)

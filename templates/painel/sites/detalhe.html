@@ -28,6 +28,10 @@
     </div>
 
     <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'painel:site_estrutura' site.uuid %}" class="btn btn-primary">
+            ⚙️ Gerenciar Estrutura
+        </a>
+
         <a href="{% url 'painel:site_editar' site.uuid %}" class="btn btn-secondary">
             Editar Informações
         </a>
@@ -58,18 +62,27 @@
 </div>
 
 <div class="detail-grid">
-    <!-- Coluna Esquerda: Placeholder Transparente do Editor Visual (Prompt 4) -->
+    <!-- Coluna Esquerda: Acesso ao Motor Estrutural e Futuro Editor Visual -->
     <div>
         <div class="detail-card" style="text-align: center; padding: 3rem 2rem; background: linear-gradient(180deg, #151d30 0%, #0b0f19 100%);">
             <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(56, 189, 248, 0.1); color: var(--painel-accent); font-size: 1.75rem; margin-bottom: 1.25rem;">
                 🎨
             </div>
             <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--painel-text);">
-                Editor Visual & Motor Estrutural
+                Motor Estrutural & Hierarquia
             </h2>
-            <p style="color: var(--painel-text-muted); font-size: 0.9375rem; max-width: 500px; margin: 0 auto 2rem; line-height: 1.6;">
-                A arquitetura de páginas, seções, blocos e o canvas de edição interativo estilo Google Sites + Canva deste BioSite serão implementados na próxima etapa (Prompt 4).
+            <p style="color: var(--painel-text-muted); font-size: 0.9375rem; max-width: 500px; margin: 0 auto 1.5rem; line-height: 1.6;">
+                Gerencie páginas, seções, containers e elementos relacionais com validação estrita mobile-first. O canvas de edição visual interativo estilo Canva/Google Sites será integrado no Prompt 5.
             </p>
+
+            <div style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="{% url 'painel:site_estrutura' site.uuid %}" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+                    ⚙️ Abrir Árvore Estrutural
+                </a>
+                <a href="{% url 'painel:site_estrutura_json' site.uuid %}" target="_blank" class="btn btn-secondary" style="font-family: monospace; font-size: 0.8125rem;">
+                    { } Ver JSON
+                </a>
+            </div>
 
             <!-- Mockup representativo da filosofia Smartphone-First (390px) -->
             <div style="max-width: 390px; margin: 0 auto; border: 2px dashed var(--painel-border); border-radius: 28px; padding: 2rem 1.5rem; background-color: rgba(11, 15, 25, 0.7);">
@@ -79,11 +92,12 @@
                 <div style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">{{ site.nome }}</div>
                 <div style="font-size: 0.8125rem; color: var(--painel-text-muted); margin-bottom: 1.5rem;">{{ site.get_tipo_display }} &bull; /{{ site.slug }}</div>
                 <div style="display: inline-block; padding: 0.375rem 0.875rem; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: var(--painel-accent); font-size: 0.75rem; font-weight: 600;">
-                    Pronto para receber componentes no Prompt 4
+                    Motor Estrutural Ativo
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Coluna Direita: Metadados do Projeto -->
     <div>
