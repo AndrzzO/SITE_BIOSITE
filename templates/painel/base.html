@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}Workspace — BioSite NFC{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'painel/css/painel.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="painel-wrapper">
+        <header class="topbar">
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <a href="{% url 'painel:sites' %}" class="topbar-brand">
+                    BioSite <span>NFC</span>
+                </a>
+                <nav class="topbar-nav" aria-label="Navegação Principal">
+                    <a href="{% url 'painel:sites' %}" class="nav-link active">Meus Sites</a>
+                </nav>
+            </div>
+
+            <div class="topbar-user">
+                <div class="user-badge" title="Operador Administrativo">
+                    <span class="user-dot"></span>
+                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                </div>
+                <form method="post" action="{% url 'painel:logout' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary btn-sm" aria-label="Encerrar sessão">
+                        Sair
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="workspace-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'painel/js/painel.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

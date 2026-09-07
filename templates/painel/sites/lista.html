@@ -1,0 +1,48 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Meus Sites — Workspace BioSite NFC{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+    <div>
+        <h1 class="workspace-title">Meus Sites</h1>
+        <p class="workspace-subtitle">
+            Gerencie, edite e publique seus projetos de BioSites e páginas integradas a NFC.
+        </p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-disabled" disabled title="Criação de novos projetos estará disponível no Prompt 3">
+            + Novo Site
+            <span class="tag-aviso">Disponível no Prompt 3</span>
+        </button>
+    </div>
+</div>
+
+{% if sites %}
+    <div class="sites-grid">
+        {# O layout dos cards reais será ativado e preenchido no Prompt 3 com o model ProjetoSite #}
+        {% for site in sites %}
+            <div class="site-card">
+                <h3>{{ site.nome }}</h3>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">
+            🌐
+        </div>
+        <h2 class="empty-state-title">Você ainda não criou nenhum site</h2>
+        <p class="empty-state-desc">
+            Seus projetos comerciais e BioSites aparecerão aqui organizados em cards visuais,
+            com indicadores de publicação, links públicos e gerenciamento de cartões NFC.
+        </p>
+        <div>
+            <button type="button" class="btn btn-disabled" disabled>
+                + Criar Primeiro Projeto
+                <span class="tag-aviso">Prompt 3</span>
+            </button>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

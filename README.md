@@ -213,14 +213,70 @@ python manage.py runserver
 ```
 Acesse:
 - **Página Inicial:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Painel Administrativo Privado:** [http://127.0.0.1:8000/painel/](http://127.0.0.1:8000/painel/)
+- **Login Administrativo:** [http://127.0.0.1:8000/painel/login/](http://127.0.0.1:8000/painel/login/)
 - **Health Check:** [http://127.0.0.1:8000/health/](http://127.0.0.1:8000/health/)
-- **Django Admin:** [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+- **Django Admin (Técnico):** [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
 
 ---
 
-## 7. Qualidade de Código e Lint
+## 7. Filosofia do Produto e Diretrizes de Design
 
-Para verificar o padrão de código e conformidade com a PEP 8:
+### 7.1 Definição Oficial
+Plataforma privada de criação, edição, publicação e hospedagem de sites em Django, com experiência estrutural inspirada no **Google Sites**, liberdade visual progressivamente inspirada no **Canva** e fluxo de projeto/preview/versão conceitualmente semelhante ao **Lovable**.
+
+### 7.2 Regra de Uso Exclusivamente Privado
+- O construtor **não é um SaaS aberto ao público**.
+- Apenas a equipe interna/proprietário opera o painel administrativo.
+- Clientes comerciais **não possuem login** nem contas no sistema. O cliente recebe e acessa apenas o BioSite final publicado.
+
+### 7.3 Diferença Crucial: Editor vs. BioSite Publicado
+```text
+EDITOR (Painel Administrativo):
+→ Ferramenta de trabalho interna
+→ Otimizada para telas médias e grandes (Desktop / Tablet)
+→ Prioridade: Clareza, velocidade, estabilidade e praticidade operacional
+
+BIOSITE (Produto Comercial Final):
+→ Prioridade absoluta: SMARTPHONE-FIRST
+→ Viewport de referência primário: 390px de largura
+→ Faixa prioritária de dispositivos: 320px a 430px (orientação portrait)
+→ Compatibilidade com desktop tratada de forma secundária
+```
+
+---
+
+## 8. Autenticação Administrativa e Workspace (Prompt 2)
+
+### 8.1 Acesso e Credenciais
+- **Acesso Privado:** `/painel/login/` (sem links de cadastro público ou criação de conta).
+- **Identificação:** Suporta login via **Nome de Usuário** ou **E-mail**.
+- **Mensagem Genérica de Erro:** Em caso de credenciais incorretas ou conta inativa, exibe unicamente *"Usuário ou senha inválidos."*, prevenindo enumeração de operadores.
+
+### 8.2 Proteção de Acesso e Autorização
+- **Camada Centralizada:** Toda a área privada é protegida por `RequerAutenticacaoAdministrativaMixin` e `@requer_autenticacao_administrativa`.
+- **Condições Mandatórias:** Requer `is_authenticated=True`, `is_active=True` e `is_staff=True`. Usuários sem privilégio `is_staff` recebem HTTP 403 Forbidden.
+- **Validação Anti-Open Redirect:** O parâmetro `next` é validado estritamente por `url_has_allowed_host_and_scheme` antes de qualquer redirecionamento.
+
+### 8.3 Rate Limiting Contra Força Bruta
+- Implementado via `ServicoRateLimitLogin` utilizando cache nativo do Django (`django.core.cache.cache`).
+- Chaves geradas com base no IP do cliente e identificador informado.
+- Política: 5 tentativas falhas dentro de 5 minutos bloqueiam temporariamente tentativas subsequentes por 10 minutos. Afeta estritamente o login, sem interromper outras navegações.
+
+### 8.4 Sessões e Logout Seguro
+- Duração da sessão administrativa configurada para 12 horas (`SESSION_COOKIE_AGE = 43200`).
+- Flags `HttpOnly` e `SameSite=Lax` ativadas.
+- Rota de logout `/painel/logout/` executada preferencialmente via requisição `POST` com token CSRF, encerrando a sessão e redirecionando ao login.
+
+### 8.5 Workspace "Meus Sites"
+- Rota: `/painel/sites/` (com redirecionamento automático a partir de `/painel/`).
+- Layout estruturado no padrão Google Sites / Canva, exibindo estado vazio informativo e preparando o grid responsivo para o recebimento do modelo `ProjetoSite` no Prompt 3.
+
+---
+
+## 9. Qualidade de Código e Lint
+
+Para verificar conformidade com a PEP 8:
 ```bash
 ruff check .
 ```
@@ -232,17 +288,17 @@ ruff format .
 
 ---
 
-## 8. Próximas Etapas (Prompts 2 a 12)
+## 10. Próximas Etapas (Prompts 3 a 12)
 
-Esta base servirá de fundação fixa para as próximas entregas sequenciais:
-1. **Prompt 2:** Autenticação e Painel Administrativo Privado
-2. **Prompt 3:** Clientes
-3. **Prompt 4:** BioSites
-4. **Prompt 5:** Componentes dos BioSites
-5. **Prompt 6:** Editor Visual
-6. **Prompt 7:** Temas e Design System
-7. **Prompt 8:** Integração e Redirecionamento NFC
-8. **Prompt 9:** QR Code
-9. **Prompt 10:** Analytics e Telemetria
-10. **Prompt 11:** Hardening, Performance e Preparação para Produção
-11. **Prompt 12:** Auditoria e Testes Finais
+1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
+2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
+3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional
+4. **Prompt 4:** BioSites
+5. **Prompt 5:** Componentes dos BioSites
+6. **Prompt 6:** Editor Visual
+7. **Prompt 7:** Temas e Design System
+8. **Prompt 8:** Integração e Redirecionamento NFC
+9. **Prompt 9:** QR Code
+10. **Prompt 10:** Analytics e Telemetria
+11. **Prompt 11:** Hardening, Performance e Preparação para Produção
+12. **Prompt 12:** Auditoria e Testes Finais

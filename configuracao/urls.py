@@ -8,6 +8,8 @@ from django.urls import include, path
 urlpatterns = [
     # Painel administrativo técnico do Django (administração interna de baixo nível)
     path("admin/", admin.site.urls),
+    # Painel administrativo privado da plataforma (Workspace e Autenticação)
+    path("painel/", include("aplicativos.administracao.urls", namespace="painel")),
     # Rota de monitoramento operacional de saúde (Health Check)
     path("health/", include("aplicativos.core.urls_health", namespace="health")),
     # Rotas públicas do aplicativo central (Home temporária)

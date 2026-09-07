@@ -95,6 +95,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Configurações de Autenticação do Painel Privado
+LOGIN_URL = "painel:login"
+LOGIN_REDIRECT_URL = "painel:sites"
+LOGOUT_REDIRECT_URL = "painel:login"
+
+# Segurança e Duração da Sessão Administrativa (12 horas)
+SESSION_COOKIE_AGE = 43200
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
 # Internacionalização e Fuso Horário
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
