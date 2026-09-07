@@ -1,0 +1,50 @@
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+env/
+
+# Bytecode e cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Variáveis de ambiente e segredos
+.env
+.env.local
+.env.*.local
+
+# Banco de dados local SQLite
+*.sqlite3
+db.sqlite3
+
+# Arquivos de mídia de desenvolvimento
+media/*
+!media/.gitkeep
+
+# Arquivos estáticos coletados
+staticfiles/
+
+# Logs
+*.log
+logs/
+
+# Testes e cobertura
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Linter e formatador
+.ruff_cache/
+
+# IDE e editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

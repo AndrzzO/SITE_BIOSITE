@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Página Não Encontrada (404) — BioSite NFC{% endblock %}
+
+{% block content %}
+<div class="container" style="text-align: center;">
+    <h1 style="font-size: 3rem; margin-bottom: 0.5rem; color: #ef4444;">404</h1>
+    <h2>Página Não Encontrada</h2>
+    <p style="margin-top: 1rem;">O recurso solicitado não existe ou foi movido.</p>
+    <a href="{% url 'core:home' %}" class="btn">Retornar ao Início</a>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+"""Roteamento de URLs principal do projeto BioSite NFC."""
+
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+urlpatterns = [
+    # Painel administrativo técnico do Django (administração interna de baixo nível)
+    path("admin/", admin.site.urls),
+    # Rota de monitoramento operacional de saúde (Health Check)
+    path("health/", include("aplicativos.core.urls_health", namespace="health")),
+    # Rotas públicas do aplicativo central (Home temporária)
+    path("", include("aplicativos.core.urls", namespace="core")),
+]
+
+# Servir arquivos de mídia e estáticos em ambiente de desenvolvimento local
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
