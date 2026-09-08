@@ -12,6 +12,8 @@ urlpatterns = [
     path("painel/", include("aplicativos.administracao.urls", namespace="painel")),
     # Rota de monitoramento operacional de saúde (Health Check)
     path("health/", include("aplicativos.core.urls_health", namespace="health")),
+    # BioSites Públicos (Prompt 8)
+    path("b/", include("aplicativos.sites.urls_publicas", namespace="publico")),
     # Rotas públicas do aplicativo central (Home temporária)
     path("", include("aplicativos.core.urls", namespace="core")),
 ]

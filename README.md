@@ -475,7 +475,70 @@ O Prompt 7 introduz um ecossistema completo de **Templates de Sites** e **Blocos
 
 ---
 
-## 14. Qualidade de Código e Lint
+## 14. Rascunho, Preview Final, Versionamento, Publicação e Hospedagem (Prompt 8)
+
+### 14.1 Princípio Fundamental: Salvar ≠ Publicar
+Inspirado na arquitetura do **Lovable**, a plataforma separa rigorosamente a área de trabalho do produto no ar:
+- **Área de Rascunho (Editor):** Autosave contínuo gravando alterações no banco relacional (`PaginaSite`, `SecaoSite`, `ContainerSite`, `ElementoSite`). Alterações no rascunho **nunca** afetam o site público até que uma nova versão seja explicitamente publicada.
+- **Área Pública Oficial (`/b/<slug>/`):** Renders exclusivamente a partir de snapshots JSON imutáveis, canônicos e versionados (`PublicacaoSite`).
+- **Idempotência:** Tentativas de republicar conteúdo inalterado são detectadas e rejeitadas via hash determinístico SHA-256, evitando versões duplicadas inúteis.
+
+### 14.2 Modelos e Versionamento Imutável
+- **`PublicacaoSite`:**
+  - `projeto`: FK para `ProjetoSite`.
+  - `numero_versao`: Sequencial estrito (`v1`, `v2`, `v3`, ...).
+  - `snapshot`: JSONField canônico contendo toda a árvore estrutural congelada, design tokens e metadados.
+  - `schema_version`: Versão do esquema JSON (versão 1).
+  - `hash_conteudo`: Fingerprint SHA-256 determinístico de 64 caracteres.
+  - `publicado_em`: Timestamp exato da publicação.
+  - `publicado_por`: Usuário operador autenticado.
+  - `ativa`: Booleano identificando a versão atualmente servida ao público.
+  - `midias_referenciadas`: ManyToMany para `MidiaSite` que impede exclusão acidental de mídias históricas.
+  - Restrição de unicidade: `UniqueConstraint(fields=['projeto', 'numero_versao'])`.
+- **Campos em `ProjetoSite`:**
+  - `publicacao_ativa`: FK apontando para a publicação no ar.
+  - `titulo_seo`, `descricao_seo`, `imagem_compartilhamento`, `indexavel`.
+- **Retenção Protetiva de Mídia (`MidiaSite.delete`):**
+  - Mídias vinculadas a publicações históricas não podem ser deletadas sem despublicação ou confirmação explícita, prevenindo links e imagens quebradas no site público.
+
+### 14.3 Rollback Cronológico Seguro
+Seguindo as melhores práticas de auditabilidade e integridade:
+- Restaurar uma versão antiga (ex: restaurar `v1` enquanto se está em `v3`) **não** reativa o registro antigo nem reescreve a história.
+- O sistema gera uma **nova versão** (`v4`) com o snapshot e hash de `v1`, preservando o histórico cronológico de auditoria.
+
+### 14.4 Rota Pública Canônica (`/b/<slug>/`)
+- **Arquitetura Smartphone-First:** Container responsivo com largura base de 390px (320px–430px mobile, centralizado com background elegante em desktop).
+- **SEO & Metatags Completas:**
+  - `<title>` customizado ou herdado do projeto.
+  - `<meta name="description">` para indexadores.
+  - `<meta name="robots" content="index, follow">` (ou `noindex, nofollow` se `indexavel=False`).
+  - `<link rel="canonical" href="...">`.
+  - Open Graph (`og:title`, `og:description`, `og:image`, `og:url`, `og:type`).
+  - Twitter Card tags.
+- **Cache & Performance:**
+  - Cache em memória/Redis com chave determinística `biosite:publico:<slug>`.
+  - Conditional GET com cabeçalho `ETag` (hash do snapshot) retornando `304 Not Modified` sem recalcular templates ou transferir payloads.
+  - Retorno HTTP 404 estrito para sites em rascunho, slugs inexistentes ou sites despublicados.
+
+### 14.5 Recursos de Interface
+- **Editor Visual (`/painel/sites/<uuid>/editor/`):**
+  - Indicador dinâmico de status na topbar (`v1 no ar`, `v1 • Não publicado`, `Rascunho`).
+  - Botão `🚀 Publicar` abrindo checklist modal com pré-validação (árvore de páginas, blocos, metadados SEO, URLs inseguras).
+  - Modal de sucesso com link público oficial, botão de cópia para área de transferência e botão para abrir em nova aba.
+  - Botão `🕘 Versões` exibindo histórico completo com preview isolado de snapshots, rollback no ar, restauração do rascunho no editor e opção de despublicar.
+- **Workspace e Detalhes do Projeto:**
+  - Badges de publicação nos cards de sites.
+  - Seção dedicada "🚀 Publicação & Site no Ar" com link público, dados da versão ativa e histórico de versões.
+
+### 14.6 Comando de Auditoria de Publicações
+Para verificar a integridade de todas as publicações no banco de dados:
+```bash
+python manage.py verificar_publicacoes
+```
+
+---
+
+## 15. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -487,14 +550,14 @@ Para formatar automaticamente o código:
 ruff format .
 ```
 
-Para executar a suíte completa de testes automatizados:
+Para executar a suíte completa de testes automatizados (199 testes):
 ```bash
 python manage.py test --settings=configuracao.settings.teste
 ```
 
 ---
 
-## 15. Próximas Etapas (Prompts 8 a 12)
+## 16. Próximas Etapas (Prompts 9 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
@@ -502,12 +565,13 @@ python manage.py test --settings=configuracao.settings.teste
 4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos *(Concluído)*
 5. **Prompt 5:** Editor Visual Mobile-First e Preview *(Concluído)*
 6. **Prompt 6:** Design System, Propriedades Visuais Avançadas e Componentes Premium *(Concluído)*
-7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas *(Concluído — 174 testes)*
-8. **Prompt 8:** Integração e Redirecionamento NFC
-9. **Prompt 9:** QR Code Dinâmico e Exportação
-10. **Prompt 10:** Analytics e Telemetria de Visitas
-11. **Prompt 11:** Hardening, Performance e Preparação para Produção
-12. **Prompt 12:** Auditoria e Testes Finais
+7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas *(Concluído)*
+8. **Prompt 8:** Rascunho, Preview Final, Versionamento, Publicação e Hospedagem *(Concluído — 199 testes)*
+9. **Prompt 9:** Integração e Redirecionamento NFC, Subdomínios e Domínios Personalizados
+10. **Prompt 10:** QR Code Dinâmico e Exportação
+11. **Prompt 11:** Hardening, Performance e Telemetria
+12. **Prompt 12:** Auditoria e Entrega Final
+
 
 
 

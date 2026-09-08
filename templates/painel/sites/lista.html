@@ -73,6 +73,11 @@
                     <div class="site-card-meta">
                         <span>Atualizado {{ site.atualizado_em|naturaltime }}</span>
                         <div style="display: flex; gap: 0.375rem;">
+                            {% if site.status == 'publicado' and site.publicacao_ativa %}
+                                <a href="{% url 'publico:site_publico' site.slug %}" target="_blank" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #10b981; border-color: rgba(16,185,129,0.4);" title="Abrir site publicado no ar">
+                                    ↗ No Ar
+                                </a>
+                            {% endif %}
                             <a href="{% url 'painel:site_detalhe' site.uuid %}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
                                 Abrir
                             </a>

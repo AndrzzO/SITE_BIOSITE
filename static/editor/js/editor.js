@@ -44,6 +44,7 @@ export class BioSiteEditorStudio {
         this.initBlocosReutilizaveis();
         this.initSalvarComoModelo();
         this.initModalBloco();
+        this.initPublicacao();
     }
 
     initAbasSidebar() {
@@ -496,6 +497,297 @@ export class BioSiteEditorStudio {
                     btnConfirmar.textContent = 'Salvar Modelo';
                 }
             });
+        }
+    }
+
+    initPublicacao() {
+        // Carrega status inicial da publicação
+        this.atualizarStatusPublicacao();
+
+        // Botão "Publicar" no topo
+        const btnPublicar = document.getElementById('btn-publicar-projeto');
+        if (btnPublicar) {
+            btnPublicar.addEventListener('click', () => this.abrirModalPublicar());
+        }
+
+        // Botão "Confirmar e Publicar" no modal
+        const btnExecutar = document.getElementById('btn-executar-publicacao');
+        if (btnExecutar) {
+            btnExecutar.addEventListener('click', () => this.executarPublicacao());
+        }
+
+        // Botão "Copiar URL" no modal de sucesso
+        const btnCopiar = document.getElementById('btn-copiar-url-sucesso');
+        if (btnCopiar) {
+            btnCopiar.addEventListener('click', () => {
+                const urlInput = document.getElementById('pub-sucesso-url');
+                if (urlInput) {
+                    navigator.clipboard.writeText(urlInput.value);
+                    const originalText = btnCopiar.textContent;
+                    btnCopiar.textContent = '✓ Copiado!';
+                    setTimeout(() => {
+                        btnCopiar.textContent = originalText;
+                    }, 2000);
+                }
+            });
+        }
+
+        // Botão "Histórico de Versões" no topo
+        const btnHistorico = document.getElementById('btn-historico-versoes');
+        if (btnHistorico) {
+            btnHistorico.addEventListener('click', () => this.abrirModalHistorico());
+        }
+
+        // Botão "Despublicar" no modal de histórico
+        const btnDespublicar = document.getElementById('btn-despublicar-editor');
+        if (btnDespublicar) {
+            btnDespublicar.addEventListener('click', () => this.despublicarProjeto());
+        }
+    }
+
+    async atualizarStatusPublicacao() {
+        const indicador = document.getElementById('publicacao-status-indicador');
+        if (!indicador) return;
+
+        try {
+            const status = await EditorApi.obterStatusPublicacao(this.siteUuid);
+            const textoEl = indicador.querySelector('.pub-status-texto');
+
+            indicador.classList.remove('publicado', 'pendente', 'rascunho');
+
+            if (status.publicado) {
+                if (status.alteracoes_pendentes) {
+                    indicador.classList.add('pendente');
+                    if (textoEl) textoEl.textContent = `v${status.versao_atual} • Não publicado`;
+                    indicador.title = `Site no ar na versão v${status.versao_atual}, mas há alterações pendentes no editor.`;
+                } else {
+                    indicador.classList.add('publicado');
+                    if (textoEl) textoEl.textContent = `v${status.versao_atual} no ar`;
+                    indicador.title = `Versão v${status.versao_atual} publicada e em sincronia com o site público.`;
+                }
+            } else {
+                indicador.classList.add('rascunho');
+                if (textoEl) textoEl.textContent = 'Rascunho';
+                indicador.title = 'Site em modo rascunho. Não publicado na internet.';
+            }
+        } catch (err) {
+            console.error('Erro ao verificar status de publicação:', err);
+        }
+    }
+
+    async abrirModalPublicar() {
+        const modal = document.getElementById('modal-confirmar-publicacao');
+        const loading = document.getElementById('pub-loading-validacao');
+        const conteudo = document.getElementById('pub-conteudo-validacao');
+        const btnExecutar = document.getElementById('btn-executar-publicacao');
+        const errosBox = document.getElementById('pub-erros-box');
+        const errosLista = document.getElementById('pub-erros-lista');
+        const avisosBox = document.getElementById('pub-avisos-box');
+        const avisosLista = document.getElementById('pub-avisos-lista');
+
+        if (!modal) return;
+
+        modal.style.display = 'flex';
+        if (loading) loading.style.display = 'block';
+        if (conteudo) conteudo.style.display = 'none';
+        if (btnExecutar) btnExecutar.disabled = true;
+
+        try {
+            const validacao = await EditorApi.validarPrePublicacao(this.siteUuid);
+
+            if (loading) loading.style.display = 'none';
+            if (conteudo) conteudo.style.display = 'block';
+
+            // Erros bloqueantes
+            if (errosBox && errosLista) {
+                if (validacao.erros && validacao.erros.length > 0) {
+                    errosLista.innerHTML = validacao.erros.map(e => `<li>${e}</li>`).join('');
+                    errosBox.style.display = 'block';
+                    if (btnExecutar) btnExecutar.disabled = true;
+                } else {
+                    errosBox.style.display = 'none';
+                    if (btnExecutar) btnExecutar.disabled = false;
+                }
+            }
+
+            // Avisos não-bloqueantes
+            if (avisosBox && avisosLista) {
+                if (validacao.avisos && validacao.avisos.length > 0) {
+                    avisosLista.innerHTML = validacao.avisos.map(a => `<li>${a}</li>`).join('');
+                    avisosBox.style.display = 'block';
+                    if (btnExecutar && !btnExecutar.disabled) {
+                        btnExecutar.textContent = '🚀 Confirmar Publicação (com Avisos)';
+                    }
+                } else {
+                    avisosBox.style.display = 'none';
+                    if (btnExecutar && !btnExecutar.disabled) {
+                        btnExecutar.textContent = '🚀 Confirmar e Publicar Agora';
+                    }
+                }
+            }
+        } catch (err) {
+            if (loading) loading.textContent = `Erro ao validar: ${err.message}`;
+        }
+    }
+
+    async executarPublicacao() {
+        const modalConfirmar = document.getElementById('modal-confirmar-publicacao');
+        const modalSucesso = document.getElementById('modal-sucesso-publicacao');
+        const btnExecutar = document.getElementById('btn-executar-publicacao');
+
+        try {
+            if (btnExecutar) {
+                btnExecutar.disabled = true;
+                btnExecutar.textContent = 'Gerando snapshot imutável...';
+            }
+
+            const resp = await EditorApi.publicarProjeto(this.siteUuid, true);
+
+            if (modalConfirmar) modalConfirmar.style.display = 'none';
+
+            // Atualiza tags de status
+            await this.atualizarStatusPublicacao();
+
+            // Abre modal de sucesso
+            if (modalSucesso) {
+                const versaoEl = document.getElementById('pub-sucesso-versao');
+                const urlEl = document.getElementById('pub-sucesso-url');
+                const linkAbrir = document.getElementById('btn-abrir-site-sucesso');
+
+                if (versaoEl) versaoEl.textContent = `v${resp.versao}`;
+                if (urlEl) urlEl.value = resp.url_publica;
+                if (linkAbrir) linkAbrir.href = resp.url_publica;
+
+                modalSucesso.style.display = 'flex';
+            }
+        } catch (err) {
+            alert(`Erro ao publicar projeto: ${err.message}`);
+        } finally {
+            if (btnExecutar) {
+                btnExecutar.disabled = false;
+                btnExecutar.textContent = '🚀 Confirmar e Publicar';
+            }
+        }
+    }
+
+    async abrirModalHistorico() {
+        const modal = document.getElementById('modal-historico-publicacoes');
+        const loading = document.getElementById('pub-historico-loading');
+        const container = document.getElementById('pub-historico-tabela-container');
+        const vazio = document.getElementById('pub-historico-vazio');
+        const tbody = document.getElementById('pub-historico-tbody');
+        const btnDespublicar = document.getElementById('btn-despublicar-editor');
+
+        if (!modal) return;
+        modal.style.display = 'flex';
+        if (loading) loading.style.display = 'block';
+        if (container) container.style.display = 'none';
+        if (vazio) vazio.style.display = 'none';
+
+        try {
+            const resp = await EditorApi.listarHistoricoPublicacoes(this.siteUuid);
+            if (loading) loading.style.display = 'none';
+
+            if (!resp.publicacoes || resp.publicacoes.length === 0) {
+                if (vazio) vazio.style.display = 'block';
+                if (btnDespublicar) btnDespublicar.style.display = 'none';
+                return;
+            }
+
+            let temAtiva = false;
+            if (tbody) {
+                tbody.innerHTML = resp.publicacoes.map(p => {
+                    if (p.ativa) temAtiva = true;
+                    const statusHtml = p.ativa
+                        ? '<span style="color: #34d399; font-weight: 700;">● No Ar</span>'
+                        : '<span style="color: #94a3b8;">Histórico</span>';
+
+                    const acaoRestaurar = !p.ativa
+                        ? `<button type="button" class="btn-preview btn-rollback-versao" data-versao="${p.numero_versao}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Criar nova versão com este snapshot e colocar no ar">↺ Restaurar no Ar</button>
+                           <button type="button" class="btn-acao-elem btn-restaurar-editor" data-versao="${p.numero_versao}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Substituir rascunho atual do editor pelo conteúdo desta versão">Editar Esta</button>`
+                        : '';
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 700; color: var(--studio-accent);">${p.versao_label}</td>
+                            <td>${statusHtml}</td>
+                            <td style="color: var(--studio-text-muted);">${p.publicado_em}</td>
+                            <td style="color: var(--studio-text-muted);">${p.autor}</td>
+                            <td><code style="font-size: 0.75rem;">${p.hash_curto}</code></td>
+                            <td style="text-align: right;">
+                                <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
+                                    <a href="${p.url_preview}" target="_blank" class="btn-preview" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Preview</a>
+                                    ${acaoRestaurar}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Adiciona listeners para os botões dinâmicos
+                tbody.querySelectorAll('.btn-rollback-versao').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const versao = btn.dataset.versao;
+                        if (!confirm(`Deseja restaurar a versão v${versao}? Uma nova versão estável será criada e colocada imediatamente no ar.`)) {
+                            return;
+                        }
+                        try {
+                            btn.disabled = true;
+                            await EditorApi.rollbackPublicacao(this.siteUuid, versao);
+                            alert(`Rollback concluído! Versão v${versao} restaurada e colocada no ar com sucesso.`);
+                            await this.atualizarStatusPublicacao();
+                            await this.abrirModalHistorico();
+                        } catch (err) {
+                            alert(`Erro ao realizar rollback: ${err.message}`);
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
+                });
+
+                tbody.querySelectorAll('.btn-restaurar-editor').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const versao = btn.dataset.versao;
+                        if (!confirm(`ATENÇÃO: Deseja carregar o conteúdo da versão v${versao} no editor? Seu rascunho de trabalho atual será substituído por este snapshot.`)) {
+                            return;
+                        }
+                        try {
+                            btn.disabled = true;
+                            await EditorApi.restaurarVersaoEditor(this.siteUuid, versao);
+                            alert(`Conteúdo da versão v${versao} restaurado no editor! A página será recarregada.`);
+                            window.location.reload();
+                        } catch (err) {
+                            alert(`Erro ao sincronizar editor: ${err.message}`);
+                            btn.disabled = false;
+                        }
+                    });
+                });
+            }
+
+            if (container) container.style.display = 'block';
+            if (btnDespublicar) btnDespublicar.style.display = temAtiva ? 'inline-block' : 'none';
+        } catch (err) {
+            if (loading) loading.textContent = `Erro ao carregar histórico: ${err.message}`;
+        }
+    }
+
+    async despublicarProjeto() {
+        if (!confirm('Deseja realmente despublicar o site? Ele deixará de responder no ar imediatamente (retornando 404), mas todo o histórico e rascunho serão preservados.')) {
+            return;
+        }
+
+        const btn = document.getElementById('btn-despublicar-editor');
+        try {
+            if (btn) btn.disabled = true;
+            await EditorApi.despublicarProjeto(this.siteUuid);
+            alert('Site despublicado com sucesso.');
+            await this.atualizarStatusPublicacao();
+            const modal = document.getElementById('modal-historico-publicacoes');
+            if (modal) modal.style.display = 'none';
+        } catch (err) {
+            alert(`Erro ao despublicar: ${err.message}`);
+        } finally {
+            if (btn) btn.disabled = false;
         }
     }
 }

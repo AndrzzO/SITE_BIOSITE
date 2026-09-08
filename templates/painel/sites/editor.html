@@ -26,17 +26,24 @@
                 <span class="autosave-dot"></span>
                 <span class="autosave-texto">✓ Salvo</span>
             </div>
+            <div id="publicacao-status-indicador" class="publicacao-status-tag rascunho" title="Status de publicação deste site">
+                <span class="pub-status-dot" style="width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block;"></span>
+                <span class="pub-status-texto">Rascunho</span>
+            </div>
         </div>
 
         <div class="studio-topbar-right">
+            <button type="button" class="btn-preview" id="btn-historico-versoes" title="Ver histórico de versões e snapshots imutáveis">
+                🕘 Versões
+            </button>
             <button type="button" class="btn-preview" id="btn-salvar-template" title="Salvar projeto atual como Modelo na Biblioteca">
                 💾 Salvar Modelo
             </button>
             <a href="{% url 'painel:site_preview' site.uuid %}?pagina={{ pagina_atual.id }}" target="_blank" class="btn-preview" title="Abrir visualização fiel em nova aba">
                 ↗ Preview
             </a>
-            <button type="button" class="btn-publicar-disabled" title="Publicação e snapshot imutável serão ativados em etapa futura" disabled>
-                Publicar
+            <button type="button" class="btn-publicar" id="btn-publicar-projeto" title="Validar alterações e colocar versão no ar">
+                🚀 Publicar
             </button>
         </div>
     </header>
@@ -400,7 +407,179 @@
     </div>
 </div>
 
+<!-- Modal: Validação Pré-Publicação e Confirmação -->
+<div id="modal-confirmar-publicacao" class="studio-modal-backdrop" style="display: none;">
+    <div class="studio-modal-box" style="width: 540px;">
+        <div class="studio-modal-header">
+            <h3>🚀 Publicar Alterações no Ar</h3>
+            <button type="button" class="studio-modal-close" data-fechar-modal>&times;</button>
+        </div>
+        <div class="studio-modal-body">
+            <p style="font-size: 0.8125rem; color: var(--studio-text-muted); margin-bottom: 1rem; line-height: 1.4;">
+                A publicação gera um snapshot JSON canônico imutável, versionado e auditado por hash SHA-256. Visitantes em <code>/b/{{ site.slug }}/</code> verão imediatamente esta versão.
+            </p>
+
+            <div id="pub-loading-validacao" style="padding: 1.5rem 0; text-align: center; color: var(--studio-text-muted); font-size: 0.875rem;">
+                <span style="display: inline-block;">⏳</span> Validando páginas, blocos e mídias...
+            </div>
+
+            <div id="pub-conteudo-validacao" style="display: none;">
+                <!-- Lista de checagens -->
+                <div class="pub-checklist-box" id="pub-checklist-box">
+                    <div class="pub-check-item ok" id="check-pagina-inicial">
+                        <span class="pub-check-icon">✓</span>
+                        <span class="pub-check-texto">Página inicial estruturada</span>
+                    </div>
+                    <div class="pub-check-item ok" id="check-secoes-elementos">
+                        <span class="pub-check-icon">✓</span>
+                        <span class="pub-check-texto">Seções e elementos válidos</span>
+                    </div>
+                    <div class="pub-check-item ok" id="check-seo-metadados">
+                        <span class="pub-check-icon">✓</span>
+                        <span class="pub-check-texto">Metadados SEO e Open Graph</span>
+                    </div>
+                </div>
+
+                <!-- Erros bloqueantes -->
+                <div id="pub-erros-box" style="display: none; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; font-size: 0.8125rem;">
+                    <strong>Erros que impedem a publicação:</strong>
+                    <ul id="pub-erros-lista" style="margin: 0.5rem 0 0 1.25rem; padding: 0;"></ul>
+                </div>
+
+                <!-- Avisos não-bloqueantes -->
+                <div id="pub-avisos-box" style="display: none; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; font-size: 0.8125rem;">
+                    <strong>Avisos / Recomendações:</strong>
+                    <ul id="pub-avisos-lista" style="margin: 0.5rem 0 0 1.25rem; padding: 0;"></ul>
+                </div>
+            </div>
+        </div>
+        <div class="studio-modal-footer">
+            <button type="button" class="btn-acao-elem" data-fechar-modal style="padding: 0.45rem 0.9rem;">Cancelar</button>
+            <button type="button" class="btn-publicar" id="btn-executar-publicacao" style="padding: 0.45rem 1.25rem;" disabled>
+                🚀 Confirmar e Publicar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Sucesso na Publicação -->
+<div id="modal-sucesso-publicacao" class="studio-modal-backdrop" style="display: none;">
+    <div class="studio-modal-box" style="width: 500px; text-align: center;">
+        <div class="studio-modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+            <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 1.75rem; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                ✓
+            </div>
+        </div>
+        <div class="studio-modal-body" style="padding-top: 0.5rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--studio-text); margin-bottom: 0.35rem;">
+                Site Publicado com Sucesso!
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--studio-text-muted); margin-bottom: 1.25rem;">
+                A versão <strong id="pub-sucesso-versao" style="color: #34d399;">v1</strong> já está disponível globalmente.
+            </p>
+
+            <div style="background: var(--studio-surface-alt); border: 1px solid var(--studio-border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; text-align: left;">
+                <label style="font-size: 0.75rem; color: var(--studio-text-muted); font-weight: 600; text-transform: uppercase;">Endereço Público do Site</label>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem;">
+                    <input type="text" id="pub-sucesso-url" readonly class="prop-input" style="font-family: monospace; font-size: 0.8125rem;">
+                    <button type="button" class="btn-acao-elem" id="btn-copiar-url-sucesso" style="white-space: nowrap; padding: 0.4rem 0.8rem;">
+                        Copiar
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                <a href="#" target="_blank" id="btn-abrir-site-sucesso" class="btn-publicar" style="text-decoration: none;">
+                    ↗ Abrir Site no Ar
+                </a>
+                <button type="button" class="btn-preview" data-fechar-modal>
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Histórico de Versões Publicadas -->
+<div id="modal-historico-publicacoes" class="studio-modal-backdrop" style="display: none;">
+    <div class="studio-modal-box" style="width: 720px; max-width: 95vw;">
+        <div class="studio-modal-header">
+            <h3>📜 Histórico de Versões Publicadas</h3>
+            <button type="button" class="studio-modal-close" data-fechar-modal>&times;</button>
+        </div>
+        <div class="studio-modal-body" style="max-height: 65vh; overflow-y: auto;">
+            <p style="font-size: 0.8125rem; color: var(--studio-text-muted); margin-bottom: 1rem; line-height: 1.4;">
+                Cada publicação é um snapshot imutável. Você pode visualizar qualquer versão anterior ou restaurá-la com segurança cronológica (gerando uma nova versão no ar).
+            </p>
+
+            <div id="pub-historico-loading" style="padding: 2rem 0; text-align: center; color: var(--studio-text-muted);">
+                Carregando histórico...
+            </div>
+
+            <div id="pub-historico-tabela-container" style="display: none;">
+                <table class="pub-table-historico" style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--studio-border); text-align: left; color: var(--studio-text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                            <th style="padding: 0.5rem 0.6rem;">Versão</th>
+                            <th style="padding: 0.5rem 0.6rem;">Status</th>
+                            <th style="padding: 0.5rem 0.6rem;">Data</th>
+                            <th style="padding: 0.5rem 0.6rem;">Publicador</th>
+                            <th style="padding: 0.5rem 0.6rem;">Hash</th>
+                            <th style="padding: 0.5rem 0.6rem; text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pub-historico-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="pub-historico-vazio" style="display: none; padding: 2.5rem 0; text-align: center; color: var(--studio-text-muted);">
+                Nenhuma publicação realizada ainda. Este site está em modo rascunho.
+            </div>
+        </div>
+        <div class="studio-modal-footer" style="justify-content: space-between;">
+            <button type="button" class="btn-acao-elem" id="btn-despublicar-editor" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); display: none;">
+                Despublicar Site
+            </button>
+            <button type="button" class="btn-preview" data-fechar-modal>Fechar</button>
+        </div>
+    </div>
+</div>
+
 <style>
+.pub-checklist-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--studio-surface-alt, #0f172a);
+    border: 1px solid var(--studio-border, #334155);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+.pub-check-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8125rem;
+    color: var(--studio-text, #f8fafc);
+}
+.pub-check-item .pub-check-icon {
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+.pub-check-item.ok .pub-check-icon {
+    color: #34d399;
+}
+.pub-check-item.alerta .pub-check-icon {
+    color: #fbbf24;
+}
+.pub-check-item.erro .pub-check-icon {
+    color: #f87171;
+}
+.pub-table-historico th, .pub-table-historico td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
 .studio-modal-backdrop {
     position: fixed;
     top: 0;

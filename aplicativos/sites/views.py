@@ -32,8 +32,10 @@ class WorkspaceSitesView(RequerAutenticacaoAdministrativaMixin, ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        # Evita N+1 carregando o cliente vinculado
-        qs = ProjetoSite.objects.select_related("cliente").order_by("-atualizado_em")
+        # Evita N+1 carregando o cliente e publicação ativa vinculados
+        qs = ProjetoSite.objects.select_related("cliente", "publicacao_ativa").order_by(
+            "-atualizado_em"
+        )
 
         termo = self.request.GET.get("q", "").strip()
         if termo:
@@ -151,6 +153,20 @@ class ProjetoSiteDetailView(RequerAutenticacaoAdministrativaMixin, DetailView):
     slug_url_kwarg = "uuid"
     template_name = "painel/sites/detalhe.html"
     context_object_name = "site"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        projeto: ProjetoSite = self.object
+        context["publicacoes"] = projeto.publicacoes.select_related("publicado_por").order_by(
+            "-numero_versao"
+        )[:10]
+        context["total_publicacoes"] = projeto.publicacoes.count()
+        context["url_publica"] = projeto.obter_url_publica(self.request)
+        context["esta_publicado"] = projeto.esta_publicado()
+        context["tem_alteracoes_pendentes"] = (
+            projeto.tem_alteracoes_nao_publicadas() if projeto.esta_publicado() else False
+        )
+        return context
 
 
 class ProjetoSiteUpdateView(RequerAutenticacaoAdministrativaMixin, UpdateView):

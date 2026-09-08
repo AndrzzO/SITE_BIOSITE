@@ -113,8 +113,85 @@
     </div>
 
 
-    <!-- Coluna Direita: Metadados do Projeto -->
+    <!-- Coluna Direita: Metadados do Projeto e Publicação -->
     <div>
+        <!-- Card: Publicação & Site no Ar -->
+        <div class="detail-card" style="margin-bottom: 1.5rem; border-color: {% if site.esta_publicado %}rgba(16, 185, 129, 0.4){% else %}var(--painel-border){% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
+                <h3 style="font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    🚀 Publicação & Site no Ar
+                </h3>
+                {% if site.esta_publicado %}
+                    <span class="site-card-badge badge-publicado" style="position: static;">v{{ site.publicacao_ativa.numero_versao }} Ativa</span>
+                {% else %}
+                    <span class="site-card-badge badge-rascunho" style="position: static;">Não Publicado</span>
+                {% endif %}
+            </div>
+
+            {% if site.esta_publicado %}
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-size: 0.75rem; color: var(--painel-text-muted); font-weight: 600; text-transform: uppercase;">URL Pública Oficial</label>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.35rem;">
+                        <input type="text" readonly value="{{ url_publica }}" id="input-url-publica" class="form-input" style="font-size: 0.8125rem; font-family: monospace; background: rgba(0,0,0,0.2);">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('{{ url_publica }}'); alert('Link copiado!');" title="Copiar URL">
+                            Copiar
+                        </button>
+                        <a href="{{ url_publica }}" target="_blank" class="btn btn-primary btn-sm" style="background: #10b981; border-color: #059669;" title="Abrir site oficial em nova aba">
+                            ↗ Abrir
+                        </a>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">Versão no Ar</div>
+                    <div class="detail-val" style="font-weight: 700; color: #10b981;">
+                        v{{ site.publicacao_ativa.numero_versao }} (Snapshot: <code>{{ site.publicacao_ativa.hash_conteudo|slice:":8" }}</code>)
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-label">Publicado em</div>
+                    <div class="detail-val" style="font-size: 0.8125rem; color: var(--painel-text-muted);">
+                        {{ site.publicacao_ativa.publicado_em|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+
+                {% if site.publicacao_ativa.publicado_por %}
+                    <div class="detail-item">
+                        <div class="detail-label">Publicado por</div>
+                        <div class="detail-val" style="font-size: 0.8125rem;">
+                            {{ site.publicacao_ativa.publicado_por.get_full_name|default:site.publicacao_ativa.publicado_por.username }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if tem_alteracoes_pendentes %}
+                    <div style="margin-top: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 6px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.8125rem; color: #fbbf24; line-height: 1.4;">
+                        ⚠️ <strong>Alterações pendentes:</strong> O rascunho no editor possui novidades que ainda não foram publicadas.
+                    </div>
+                {% endif %}
+
+                <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-direction: column;">
+                    <a href="{% url 'painel:site_editor' site.uuid %}" class="btn btn-primary btn-sm" style="text-align: center;">
+                        🚀 Publicar Nova Versão no Editor
+                    </a>
+                    <form method="post" action="{% url 'painel:site_despublicar' site.uuid %}" onsubmit="return confirm('Deseja realmente despublicar este site? O endereço público deixará de responder imediatamente com status 404, mas todo o histórico será preservado.');" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary btn-sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); width: 100%;">
+                            Despublicar Site
+                        </button>
+                    </form>
+                </div>
+            {% else %}
+                <p style="font-size: 0.875rem; color: var(--painel-text-muted); line-height: 1.5; margin-bottom: 1rem;">
+                    Este site ainda é um rascunho e não possui uma versão publicada. A URL pública <code>/b/{{ site.slug }}/</code> só responderá após a primeira publicação.
+                </p>
+                <a href="{% url 'painel:site_editor' site.uuid %}" class="btn btn-primary" style="display: block; text-align: center;">
+                    🎨 Ir ao Editor e Publicar
+                </a>
+            {% endif %}
+        </div>
+
         <div class="detail-card">
             <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
                 Dados Administrativos
@@ -171,4 +248,82 @@
         </div>
     </div>
 </div>
+
+<!-- Seção Inferior: Histórico de Versões Publicadas -->
+{% if publicacoes %}
+<div class="detail-card" style="margin-top: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
+        <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.25rem 0;">
+                📜 Histórico de Publicações (Snapshots Imutáveis)
+            </h3>
+            <p style="font-size: 0.8125rem; color: var(--painel-text-muted); margin: 0;">
+                Todas as versões publicadas são imutáveis e auditadas com hash SHA-256 canônico.
+            </p>
+        </div>
+        <span style="font-size: 0.8125rem; color: var(--painel-text-muted);">
+            Total: <strong>{{ total_publicacoes }}</strong> versão(ões)
+        </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--painel-border); text-align: left; color: var(--painel-text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                    <th style="padding: 0.5rem 0.75rem;">Versão</th>
+                    <th style="padding: 0.5rem 0.75rem;">Status</th>
+                    <th style="padding: 0.5rem 0.75rem;">Data da Publicação</th>
+                    <th style="padding: 0.5rem 0.75rem;">Publicado Por</th>
+                    <th style="padding: 0.5rem 0.75rem;">Hash SHA-256</th>
+                    <th style="padding: 0.5rem 0.75rem; text-align: right;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pub in publicacoes %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 0.75rem; font-weight: 700; color: var(--painel-accent);">
+                            v{{ pub.numero_versao }}
+                        </td>
+                        <td style="padding: 0.75rem;">
+                            {% if pub.ativa %}
+                                <span style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700; font-size: 0.75rem;">
+                                    ● NO AR (Ativa)
+                                </span>
+                            {% else %}
+                                <span style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94a3b8; font-size: 0.75rem;">
+                                    Histórico
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.75rem; color: var(--painel-text-muted);">
+                            {{ pub.publicado_em|date:"d/m/Y H:i" }}
+                        </td>
+                        <td style="padding: 0.75rem; color: var(--painel-text-muted);">
+                            {{ pub.publicado_por.get_full_name|default:pub.publicado_por.username|default:"Operador" }}
+                        </td>
+                        <td style="padding: 0.75rem; font-family: monospace; font-size: 0.75rem; color: var(--painel-text-muted);">
+                            <code>{{ pub.hash_conteudo|slice:":8" }}</code>
+                        </td>
+                        <td style="padding: 0.75rem; text-align: right;">
+                            <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
+                                <a href="{% url 'painel:publicacao_preview' site.uuid pub.numero_versao %}" target="_blank" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Visualizar snapshot em smartphone 390px">
+                                    👁️ Preview
+                                </a>
+                                {% if not pub.ativa %}
+                                    <form method="post" action="{% url 'painel:publicacao_rollback' site.uuid pub.numero_versao %}" onsubmit="return confirm('Restaurar a versão v{{ pub.numero_versao }}? Uma nova versão será criada com este snapshot e colocada no ar.');" style="margin: 0; display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Colocar esta versão histórica no ar (Rollback seguro)">
+                                            ↺ Restaurar no Ar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

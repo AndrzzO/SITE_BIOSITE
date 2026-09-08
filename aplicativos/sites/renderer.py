@@ -404,8 +404,10 @@ class RenderizadorBioSite:
             mark_safe("".join(secoes_html)),
         )
 
-    def renderizar_snapshot(self, snapshot: dict[str, Any]) -> SafeString:
-        """Renderiza um snapshot estrutural de TemplateSite em memória (Preview Fiel)."""
+    def renderizar_snapshot(
+        self, snapshot: dict[str, Any], pagina_slug: str | None = None
+    ) -> SafeString:
+        """Renderiza um snapshot estrutural em memória (Preview Fiel ou Site Público)."""
         config_dict = snapshot.get("configuracao_visual", {})
         bloco_tokens = gerar_bloco_tokens_de_dict(config_dict)
         tag_tokens = format_html(
@@ -414,18 +416,37 @@ class RenderizadorBioSite:
 
         paginas = snapshot.get("paginas", [])
         secoes_html = []
+        pagina_alvo = None
+
         if paginas:
-            primeira_pagina = paginas[0]
-            for idx_s, s_dict in enumerate(primeira_pagina.get("secoes", [])):
+            if pagina_slug:
+                for p in paginas:
+                    if p.get("slug") == pagina_slug:
+                        pagina_alvo = p
+                        break
+            if not pagina_alvo:
+                for p in paginas:
+                    if p.get("eh_inicial"):
+                        pagina_alvo = p
+                        break
+            if not pagina_alvo:
+                pagina_alvo = paginas[0]
+
+            for idx_s, s_dict in enumerate(pagina_alvo.get("secoes", [])):
                 secoes_html.append(self.renderizar_snapshot_secao(s_dict, id_secao=idx_s + 1))
+
+        modo_classe = "public-mode" if self.modo == "publico" else "preview-mode"
+        pagina_id_attr = pagina_alvo.get("slug", "snapshot") if pagina_alvo else "snapshot"
 
         return format_html(
             """
-            <div class="biosite-canvas-root preview-mode" id="biosite-canvas-root" data-pagina-id="snapshot">
+            <div class="biosite-canvas-root {}" id="biosite-canvas-root" data-pagina-id="{}">
                 {}
                 {}
             </div>
             """,
+            modo_classe,
+            pagina_id_attr,
             tag_tokens,
             mark_safe("".join(secoes_html)),
         )

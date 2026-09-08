@@ -140,5 +140,48 @@ export const EditorApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         });
+    },
+
+    async validarPrePublicacao(siteUuid) {
+        return fetchJson(`/painel/sites/${siteUuid}/publicar/validar/`, {
+            method: 'GET'
+        });
+    },
+
+    async publicarProjeto(siteUuid, forcar = false) {
+        return fetchJson(`/painel/sites/${siteUuid}/publicar/`, {
+            method: 'POST',
+            body: JSON.stringify({ forcar })
+        });
+    },
+
+    async obterStatusPublicacao(siteUuid) {
+        return fetchJson(`/painel/sites/${siteUuid}/publicacao/status/`, {
+            method: 'GET'
+        });
+    },
+
+    async listarHistoricoPublicacoes(siteUuid) {
+        return fetchJson(`/painel/sites/${siteUuid}/publicacoes/`, {
+            method: 'GET'
+        });
+    },
+
+    async rollbackPublicacao(siteUuid, versao) {
+        return fetchJson(`/painel/sites/${siteUuid}/publicacoes/${versao}/restaurar/`, {
+            method: 'POST'
+        });
+    },
+
+    async restaurarVersaoEditor(siteUuid, versao) {
+        return fetchJson(`/painel/sites/${siteUuid}/publicacoes/${versao}/restaurar-editor/`, {
+            method: 'POST'
+        });
+    },
+
+    async despublicarProjeto(siteUuid) {
+        return fetchJson(`/painel/sites/${siteUuid}/despublicar/`, {
+            method: 'POST'
+        });
     }
 };

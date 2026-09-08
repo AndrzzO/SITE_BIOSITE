@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -97,6 +98,46 @@ class ProjetoSite(ModeloBase):
         verbose_name=_("Modelo de Origem"),
         help_text=_("Modelo/template utilizado como ponto de partida inicial (informativo)."),
     )
+    # Publicação e SEO (Prompt 8)
+    publicacao_ativa = models.ForeignKey(
+        "PublicacaoSite",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projeto_ativo_set",
+        verbose_name=_("Publicação Ativa"),
+        help_text=_("Ponteiro direto para a versão de publicação atualmente no ar."),
+    )
+    titulo_seo = models.CharField(
+        _("Título SEO"),
+        max_length=160,
+        blank=True,
+        help_text=_(
+            "Título para mecanismos de busca e redes sociais (deixe vazio para usar o nome do site)."
+        ),
+    )
+    descricao_seo = models.CharField(
+        _("Descrição SEO"),
+        max_length=255,
+        blank=True,
+        help_text=_("Meta description para mecanismos de busca e prévia no WhatsApp."),
+    )
+    imagem_compartilhamento = models.ForeignKey(
+        "MidiaSite",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projetos_imagem_og",
+        verbose_name=_("Imagem de Compartilhamento (OG)"),
+        help_text=_("Imagem exibida em links compartilhados no WhatsApp, Facebook, etc."),
+    )
+    indexavel = models.BooleanField(
+        _("Indexável por Buscadores"),
+        default=True,
+        help_text=_(
+            "Permite indexação pelo Google e outros buscadores quando o site estiver publicado."
+        ),
+    )
     arquivado_em = models.DateTimeField(
         _("Arquivado em"),
         null=True,
@@ -110,6 +151,27 @@ class ProjetoSite(ModeloBase):
 
     def __str__(self) -> str:
         return self.nome
+
+    def obter_url_publica(self, request=None) -> str:
+        """Retorna a URL pública canônica do BioSite (/b/<slug>/)."""
+        from django.urls import reverse
+
+        caminho = reverse("publico:site_publico", kwargs={"slug": self.slug})
+        if request is not None:
+            return request.build_absolute_uri(caminho)
+        return caminho
+
+    def tem_alteracoes_nao_publicadas(self) -> bool:
+        """Verifica se o rascunho atual possui alterações ainda não publicadas."""
+        if not self.publicacao_ativa:
+            return True
+        from .servicos_publicacao import verificar_alteracoes_pendentes
+
+        return verificar_alteracoes_pendentes(self)
+
+    def esta_publicado(self) -> bool:
+        """Indica se o site possui publicação ativa e status publicado."""
+        return self.status == self.Status.PUBLICADO and self.publicacao_ativa is not None
 
     def arquivar(self) -> None:
         """Move o projeto para o status arquivado."""
@@ -670,6 +732,15 @@ class MidiaSite(ModeloBase):
             return self.arquivo.url
         return ""
 
+    def delete(self, *args, **kwargs):
+        if hasattr(self, "publicacoes_que_utilizam") and self.publicacoes_que_utilizam.exists():
+            raise ValidationError(
+                _(
+                    "Esta mídia não pode ser excluída pois está vinculada a versões publicadas do site."
+                )
+            )
+        return super().delete(*args, **kwargs)
+
 
 class TemplateSite(ModeloBase):
     """
@@ -842,3 +913,85 @@ class BlocoReutilizavel(ModeloBase):
 
     def __str__(self) -> str:
         return f"{self.nome} ({self.get_categoria_display()})"
+
+
+class PublicacaoSite(ModeloBase):
+    """
+    Representa uma versão publicada imutável de um ProjetoSite (Prompt 8).
+
+    REGRAS ARQUITETURAIS:
+    1. Imutabilidade absoluta: o snapshot nunca é alterado após a criação da versão.
+    2. Sequenciamento versionado: v1, v2, v3... único por projeto (UniqueConstraint).
+    3. Conteúdo público estável: o público consome exclusivamente a publicação com ativa=True.
+    4. Rollback cronológico: restaurar uma versão gera uma nova versão com o snapshot alvo.
+    5. Retenção de mídia: mídias referenciadas ficam protegidas contra exclusão acidental.
+    """
+
+    projeto = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.CASCADE,
+        related_name="publicacoes",
+        verbose_name=_("Projeto"),
+    )
+    numero_versao = models.PositiveIntegerField(
+        _("Número da Versão"),
+        db_index=True,
+    )
+    snapshot = models.JSONField(
+        _("Snapshot Publicado"),
+        help_text=_("Snapshot estrutural canônico, validado e imutável do site publicado."),
+    )
+    schema_version = models.PositiveIntegerField(
+        _("Versão do Schema"),
+        default=1,
+    )
+    hash_conteudo = models.CharField(
+        _("Hash SHA-256 do Conteúdo"),
+        max_length=64,
+        db_index=True,
+        help_text=_("Hash determinístico da representação canônica do conteúdo publicado."),
+    )
+    publicado_em = models.DateTimeField(
+        _("Publicado em"),
+        default=timezone.now,
+        db_index=True,
+    )
+    publicado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="publicacoes_realizadas",
+        verbose_name=_("Publicado por"),
+    )
+    ativa = models.BooleanField(
+        _("Publicação Ativa"),
+        default=False,
+        db_index=True,
+    )
+    metadata = models.JSONField(
+        _("Metadados Técnicos"),
+        default=dict,
+        blank=True,
+    )
+    midias_referenciadas = models.ManyToManyField(
+        MidiaSite,
+        blank=True,
+        related_name="publicacoes_que_utilizam",
+        verbose_name=_("Mídias Referenciadas"),
+    )
+
+    class Meta:
+        verbose_name = _("publicação de site")
+        verbose_name_plural = _("publicações de sites")
+        ordering = ["-numero_versao"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["projeto", "numero_versao"],
+                name="unique_projeto_numero_versao",
+            )
+        ]
+
+    def __str__(self) -> str:
+        status_txt = " [ATIVA]" if self.ativa else ""
+        return f"{self.projeto.nome} — v{self.numero_versao}{status_txt}"

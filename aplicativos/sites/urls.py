@@ -43,6 +43,16 @@ from .views_estrutura import (
     SecaoDuplicarView,
     SecaoExcluirView,
 )
+from .views_publicacao import (
+    DespublicarProjetoView,
+    PublicacaoPreviewView,
+    PublicacaoRestaurarEditorView,
+    PublicacaoRollbackView,
+    PublicacaoStatusView,
+    PublicacoesHistoricoView,
+    PublicarProjetoView,
+    ValidarPrePublicacaoView,
+)
 from .views_templates import (
     EditorBlocoInserirView,
     EditorBlocosListarView,
@@ -63,6 +73,39 @@ urlpatterns = [
         TemplateSalvarComoView.as_view(),
         name="site_salvar_template",
     ),
+    # Ciclo de Vida de Publicação e Versionamento (Prompt 8)
+    path("<uuid:uuid>/publicar/", PublicarProjetoView.as_view(), name="site_publicar"),
+    path(
+        "<uuid:uuid>/publicar/validar/",
+        ValidarPrePublicacaoView.as_view(),
+        name="site_publicar_validar",
+    ),
+    path(
+        "<uuid:uuid>/publicacao/status/",
+        PublicacaoStatusView.as_view(),
+        name="site_publicacao_status",
+    ),
+    path(
+        "<uuid:uuid>/publicacoes/",
+        PublicacoesHistoricoView.as_view(),
+        name="site_publicacoes_historico",
+    ),
+    path(
+        "<uuid:uuid>/publicacoes/<int:versao>/preview/",
+        PublicacaoPreviewView.as_view(),
+        name="publicacao_preview",
+    ),
+    path(
+        "<uuid:uuid>/publicacoes/<int:versao>/restaurar/",
+        PublicacaoRollbackView.as_view(),
+        name="publicacao_rollback",
+    ),
+    path(
+        "<uuid:uuid>/publicacoes/<int:versao>/restaurar-editor/",
+        PublicacaoRestaurarEditorView.as_view(),
+        name="publicacao_restaurar_editor",
+    ),
+    path("<uuid:uuid>/despublicar/", DespublicarProjetoView.as_view(), name="site_despublicar"),
     # Editor Visual Mobile-First e Preview (Prompt 5 & 6)
     path("<uuid:uuid>/editor/", EditorStudioView.as_view(), name="site_editor"),
     path("<uuid:uuid>/editor/dados/", EditorDadosJsonView.as_view(), name="site_editor_dados"),

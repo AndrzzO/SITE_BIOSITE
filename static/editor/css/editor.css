@@ -159,18 +159,62 @@ body.editor-active {
     border-color: #4b5563;
 }
 
-.btn-publicar-disabled {
+.btn-publicar {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(56, 189, 248, 0.15);
-    border: 1px dashed rgba(56, 189, 248, 0.4);
-    color: rgba(56, 189, 248, 0.7);
-    padding: 0.45rem 0.9rem;
+    background: #10b981;
+    border: 1px solid #059669;
+    color: #ffffff;
+    padding: 0.45rem 1.1rem;
     border-radius: 6px;
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.btn-publicar:hover:not(:disabled) {
+    background: #059669;
+    border-color: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-publicar:disabled {
+    opacity: 0.65;
     cursor: not-allowed;
+    transform: none;
+}
+
+.publicacao-status-tag {
+    font-size: 0.6875rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.publicacao-status-tag.publicado {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.publicacao-status-tag.pendente {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.publicacao-status-tag.rascunho {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 /* --------------------------------------------------------------------------
