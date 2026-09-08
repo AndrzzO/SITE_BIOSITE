@@ -7,6 +7,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from aplicativos.clientes.models import Cliente
+from aplicativos.sites.elementos.registry import RegistroElementos
 from aplicativos.sites.models import ElementoSite, PaginaSite, ProjetoSite, SecaoSite
 from aplicativos.sites.renderer import RenderizadorBioSite
 from aplicativos.sites.servicos_estrutura import (
@@ -429,3 +430,119 @@ class PreviewFielTests(EditorVisualTestCase):
         )
         self.assertIn("@media (min-width: 768px)", css)
         self.assertIn("text-align: left; font-size: 32px;", css)
+
+
+class CanvasLivreTests(EditorVisualTestCase):
+    """Testes de renderização, posicionamento livre e novos elementos (Canva / Paint / Google Sites)."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.usuario)
+
+    def test_novos_tipos_elementos_registrados(self):
+        """Garante que os novos elementos de mídia e estrutura estão registrados no catálogo."""
+        for tipo in ["video", "forma", "html_embed", "logo"]:
+            self.assertTrue(
+                RegistroElementos.eh_valido(tipo),
+                f"Tipo '{tipo}' deveria estar registrado no RegistroElementos.",
+            )
+
+    def test_renderizar_elemento_video_youtube(self):
+        elem = ElementoSite.objects.create(
+            container=self.container,
+            tipo="VIDEO",
+            conteudo={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+            ordem=10,
+        )
+        html = RenderizadorBioSite(modo="editor").renderizar_elemento(elem)
+        self.assertIn("youtube-nocookie.com/embed/dQw4w9WgXcQ", html)
+        self.assertIn("elemento-video-wrapper", html)
+
+    def test_renderizar_elemento_forma_retangulo_e_circulo(self):
+        elem_ret = ElementoSite.objects.create(
+            container=self.container,
+            tipo="FORMA",
+            conteudo={"subtipo": "retangulo", "cor_fundo": "#ef4444"},
+            ordem=11,
+        )
+        html_ret = RenderizadorBioSite(modo="editor").renderizar_elemento(elem_ret)
+        self.assertIn("elemento-forma", html_ret)
+        self.assertIn("background-color: #ef4444", html_ret)
+
+        elem_circ = ElementoSite.objects.create(
+            container=self.container,
+            tipo="FORMA",
+            conteudo={"subtipo": "circulo", "cor_fundo": "#10b981"},
+            ordem=12,
+        )
+        html_circ = RenderizadorBioSite(modo="editor").renderizar_elemento(elem_circ)
+        self.assertIn("border-radius: 9999px", html_circ)
+
+    def test_renderizar_elemento_html_embed_com_sandbox(self):
+        elem = ElementoSite.objects.create(
+            container=self.container,
+            tipo="HTML_EMBED",
+            conteudo={"codigo_html": "<b>Destaque</b>", "altura_px": 150},
+            ordem=13,
+        )
+        html = RenderizadorBioSite(modo="editor").renderizar_elemento(elem)
+        self.assertIn("elemento-html-embed", html)
+        self.assertIn('sandbox="allow-scripts"', html)
+        self.assertIn("height:150px", html)
+
+    def test_secao_modo_canvas_livre_renderiza_caixa_livre_e_handles(self):
+        secao_livre = SecaoSite.objects.create(
+            pagina=self.pagina,
+            nome_interno="Hero Livre",
+            tipo=SecaoSite.Tipo.NORMAL,
+            ordem=20,
+            estilos={"modo_canvas": "livre", "altura_min_px": 450},
+        )
+        html = RenderizadorBioSite(modo="editor").renderizar_secao(secao_livre)
+        self.assertIn('data-modo-canvas="livre"', html)
+        self.assertIn("canvas-livre-box", html)
+        self.assertIn("secao-resize-handle", html)
+        self.assertIn("min-height:450px", html)
+
+    def test_elemento_com_posicao_livre_renderiza_posicionamento_absoluto(self):
+        elem = ElementoSite.objects.create(
+            container=self.container,
+            tipo="TITULO",
+            conteudo={"texto": "Título Livre"},
+            estilos={
+                "posicao": {
+                    "x_pct": 15.5,
+                    "y_px": 50,
+                    "w_pct": 70.0,
+                    "z_index": 5,
+                    "h_auto": True,
+                }
+            },
+            ordem=14,
+        )
+        # Modo editor
+        html_editor = RenderizadorBioSite(modo="editor").renderizar_elemento(elem)
+        self.assertIn('data-x-pct="15.5000"', html_editor)
+        self.assertIn('data-y-px="50"', html_editor)
+        self.assertIn('data-w-pct="70.0000"', html_editor)
+        self.assertIn('data-z-index="5"', html_editor)
+        self.assertIn("position:absolute;left:15.50%;top:50px;width:70.00%;z-index:5;", html_editor)
+
+        # Modo público / preview
+        html_pub = RenderizadorBioSite(modo="publico").renderizar_elemento(elem)
+        self.assertIn("position:absolute;left:15.50%;top:50px;width:70.00%;z-index:5;", html_pub)
+
+    def test_criar_secao_via_endpoint_padrao_modo_livre(self):
+        url = reverse("painel:site_editor_secao_criar", kwargs={"uuid": self.projeto.uuid})
+        response = self.client.post(
+            url,
+            data=json.dumps(
+                {"pagina_id": self.pagina.id, "nome_interno": "Seção Criada no Editor"}
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        dados = response.json()
+        self.assertTrue(dados["ok"])
+        self.assertEqual(dados["modo_canvas"], "livre")
+        self.assertIn("canvas-livre-box", dados["html"])

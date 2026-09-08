@@ -275,7 +275,73 @@ export class PropriedadesManager {
                     <span id="val-altura" style="font-size: 0.75rem; color: var(--studio-text-muted);">24px</span>
                 </div>
             `;
+        } else if (tipoElem === 'VIDEO') {
+            const urlVideo = el.querySelector('iframe, video')?.getAttribute('src') || '';
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">URL do Vídeo (YouTube, Vimeo, MP4)</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" value="${this.escapeHtml(urlVideo)}" placeholder="https://youtube.com/watch?v=...">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Raio da Borda (px)</label>
+                    <input type="number" class="prop-input" id="prop-campo-raio_borda" value="8" min="0" max="40">
+                </div>
+            `;
+        } else if (tipoElem === 'FORMA') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Tipo de Forma</label>
+                    <select class="prop-select" id="prop-campo-subtipo">
+                        <option value="retangulo">Retângulo / Bloco</option>
+                        <option value="circulo">Círculo</option>
+                    </select>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Cor de Preenchimento</label>
+                    <input type="color" class="prop-input" id="prop-campo-cor_fundo" value="#38bdf8" style="height: 36px;">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Opacidade</label>
+                    <input type="range" class="prop-input" id="prop-campo-opacidade" min="0.1" max="1" step="0.05" value="1">
+                </div>
+            `;
+        } else if (tipoElem === 'HTML_EMBED') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Código HTML (Sandbox)</label>
+                    <textarea class="prop-input" id="prop-campo-codigo_html" rows="5" style="font-family: monospace; font-size: 0.75rem;"></textarea>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Altura (px)</label>
+                    <input type="number" class="prop-input" id="prop-campo-altura_px" value="120" min="40" max="1200">
+                </div>
+            `;
+        } else if (tipoElem === 'LOGO') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">URL da Imagem do Logo</label>
+                    <input type="url" class="prop-input" id="prop-campo-url_imagem" placeholder="https://...">
+                    <button type="button" class="btn-upload-midia" style="margin-top: 0.35rem;" id="btn-abrir-midia">📁 Escolher da Galeria de Mídias</button>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Nome da Marca</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto_alternativo" value="Logo">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Largura (px)</label>
+                    <input type="number" class="prop-input" id="prop-campo-largura_px" value="140" min="40" max="400">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Link no Logo (URL)</label>
+                    <input type="url" class="prop-input" id="prop-campo-link_url" placeholder="https://...">
+                </div>
+            `;
         }
+
+        const xVal = parseFloat(el.dataset.xPct || 10).toFixed(1);
+        const yVal = parseFloat(el.dataset.yPx || 20).toFixed(0);
+        const wVal = parseFloat(el.dataset.wPct || 80).toFixed(0);
+        const zVal = el.style.zIndex || el.dataset.zIndex || 1;
 
         this.conteudoEl.innerHTML = `
             <div class="propriedades-header">
@@ -292,6 +358,40 @@ export class PropriedadesManager {
 
                 <!-- Campos Específicos do Tipo -->
                 ${camposEspecificosHtml}
+
+                <!-- Posicionamento Livre no Canvas & Camadas (Canva / Paint) -->
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--studio-border);">
+                    <span class="prop-label" style="font-weight: 700; color: var(--studio-accent); margin-bottom: 0.5rem; display: block;">Posição & Camadas (Canvas Livre)</span>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div class="form-group-prop" style="margin-bottom: 0;">
+                            <label class="prop-label" style="font-size: 0.7rem;">X (% Canvas)</label>
+                            <input type="number" class="prop-input" id="prop-pos-x" step="0.5" min="0" max="100" value="${xVal}">
+                        </div>
+                        <div class="form-group-prop" style="margin-bottom: 0;">
+                            <label class="prop-label" style="font-size: 0.7rem;">Y (px Topo)</label>
+                            <input type="number" class="prop-input" id="prop-pos-y" step="5" min="0" value="${yVal}">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div class="form-group-prop" style="margin-bottom: 0;">
+                            <label class="prop-label" style="font-size: 0.7rem;">Largura (%)</label>
+                            <input type="number" class="prop-input" id="prop-pos-w" step="1" min="10" max="100" value="${wVal}">
+                        </div>
+                        <div class="form-group-prop" style="margin-bottom: 0;">
+                            <label class="prop-label" style="font-size: 0.7rem;">Camada (Z-Index)</label>
+                            <input type="number" class="prop-input" id="prop-pos-z" min="1" max="999" value="${zVal}">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 4px; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" class="btn-studio-tool" id="btn-prop-z-avancar" title="Avançar uma camada">↑ Avançar</button>
+                        <button type="button" class="btn-studio-tool" id="btn-prop-z-recuar" title="Recuar uma camada">↓ Recuar</button>
+                        <button type="button" class="btn-studio-tool" id="btn-prop-z-frente" title="Trazer para frente">⤒ Frente</button>
+                        <button type="button" class="btn-studio-tool" id="btn-prop-z-fundo" title="Enviar para o fundo">⤓ Fundo</button>
+                    </div>
+                </div>
 
                 <!-- Estilos Globais vs Locais -->
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--studio-border);">
@@ -378,7 +478,9 @@ export class PropriedadesManager {
             'texto', 'url', 'numero', 'mensagem', 'email', 'assunto',
             'endereco', 'url_personalizada', 'forma', 'tamanho', 'altura',
             'estilo', 'largura', 'espessura', 'fit', 'alt_text', 'estilo_visual',
-            'estilo_botao', 'formato'
+            'estilo_botao', 'formato', 'subtipo', 'cor_fundo', 'opacidade',
+            'raio_borda', 'codigo_html', 'altura_px', 'url_imagem',
+            'texto_alternativo', 'largura_px', 'link_url'
         ];
 
         camposConteudo.forEach(campoNome => {
@@ -401,6 +503,74 @@ export class PropriedadesManager {
                         conteudo: conteudo,
                     });
                 });
+            }
+        });
+
+        // Posição no Canvas Livre (X, Y, W, Z)
+        const inputPosX = document.getElementById('prop-pos-x');
+        const inputPosY = document.getElementById('prop-pos-y');
+        const inputPosW = document.getElementById('prop-pos-w');
+        const inputPosZ = document.getElementById('prop-pos-z');
+
+        const atualizarPosicao = () => {
+            const x = parseFloat(inputPosX?.value || el.dataset.xPct || 0);
+            const y = parseFloat(inputPosY?.value || el.dataset.yPx || 0);
+            const w = parseFloat(inputPosW?.value || el.dataset.wPct || 80);
+            const z = parseInt(inputPosZ?.value || el.style.zIndex || 1, 10);
+
+            el.style.left = `${x}%`;
+            el.style.top = `${y}px`;
+            el.style.width = `${w}%`;
+            el.style.zIndex = z;
+
+            el.dataset.xPct = x;
+            el.dataset.yPx = y;
+            el.dataset.wPct = w;
+            el.dataset.zIndex = z;
+
+            if (this.editor.canvasLivreManager) {
+                this.editor.canvasLivreManager._persistirPosicao(id, {
+                    x_pct: x,
+                    y_px: y,
+                    w_pct: w,
+                    z_index: z,
+                    h_auto: el.dataset.hAuto !== 'false'
+                });
+            }
+        };
+
+        inputPosX?.addEventListener('change', atualizarPosicao);
+        inputPosY?.addEventListener('change', atualizarPosicao);
+        inputPosW?.addEventListener('change', atualizarPosicao);
+        inputPosZ?.addEventListener('change', atualizarPosicao);
+
+        // Botões de Camada (Z-Index)
+        document.getElementById('btn-prop-z-avancar')?.addEventListener('click', async () => {
+            if (this.editor.canvasLivreManager) {
+                await this.editor.canvasLivreManager.alterarZIndex(id, 'forward');
+                this.renderizarPropriedadesElemento(id, el);
+                this.editor.atualizarPainelCamadas();
+            }
+        });
+        document.getElementById('btn-prop-z-recuar')?.addEventListener('click', async () => {
+            if (this.editor.canvasLivreManager) {
+                await this.editor.canvasLivreManager.alterarZIndex(id, 'backward');
+                this.renderizarPropriedadesElemento(id, el);
+                this.editor.atualizarPainelCamadas();
+            }
+        });
+        document.getElementById('btn-prop-z-frente')?.addEventListener('click', async () => {
+            if (this.editor.canvasLivreManager) {
+                await this.editor.canvasLivreManager.alterarZIndex(id, 'front');
+                this.renderizarPropriedadesElemento(id, el);
+                this.editor.atualizarPainelCamadas();
+            }
+        });
+        document.getElementById('btn-prop-z-fundo')?.addEventListener('click', async () => {
+            if (this.editor.canvasLivreManager) {
+                await this.editor.canvasLivreManager.alterarZIndex(id, 'back');
+                this.renderizarPropriedadesElemento(id, el);
+                this.editor.atualizarPainelCamadas();
             }
         });
 
@@ -437,6 +607,7 @@ export class PropriedadesManager {
     renderizarPropriedadesSecao(id, el) {
         const nomeAtual = el.querySelector('.editor-secao-nome')?.innerText || 'Seção';
         const tipoAtual = el.dataset.tipo || 'NORMAL';
+        const modoCanvas = el.dataset.modoCanvas || 'livre';
 
         this.conteudoEl.innerHTML = `
             <div class="propriedades-header">
@@ -447,6 +618,15 @@ export class PropriedadesManager {
                     <label class="prop-label">Nome Interno</label>
                     <input type="text" class="prop-input" id="prop-secao-nome" value="${this.escapeHtml(nomeAtual)}">
                 </div>
+
+                <div class="form-group-prop">
+                    <label class="prop-label">Modo de Criação</label>
+                    <select class="prop-select" id="prop-secao-modo_canvas">
+                        <option value="livre" ${modoCanvas === 'livre' ? 'selected' : ''}>🎨 Canvas Livre (Canva / Paint)</option>
+                        <option value="fluxo" ${modoCanvas === 'fluxo' ? 'selected' : ''}>📑 Modo Fluxo Estruturado</option>
+                    </select>
+                </div>
+
                 <div class="form-group-prop">
                     <label class="prop-label">Tipo de Seção</label>
                     <select class="prop-select" id="prop-secao-tipo">
@@ -455,6 +635,7 @@ export class PropriedadesManager {
                         <option value="tela_cheia" ${tipoAtual.toLowerCase() === 'tela_cheia' ? 'selected' : ''}>Tela Cheia (100vh)</option>
                     </select>
                 </div>
+
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--studio-border); display: flex; justify-content: space-between;">
                     <button type="button" class="btn-acao-elem" id="btn-secao-duplicar">⎘ Duplicar Seção</button>
                     <button type="button" class="btn-acao-elem btn-danger" id="btn-secao-excluir">✕ Excluir Seção</button>
@@ -467,6 +648,13 @@ export class PropriedadesManager {
             const nomeEl = el.querySelector('.editor-secao-nome');
             if (nomeEl) nomeEl.innerText = novoNome;
             this.editor.salvarSecao(id, { nome_interno: novoNome });
+        });
+
+        document.getElementById('prop-secao-modo_canvas')?.addEventListener('change', (e) => {
+            const novoModo = e.target.value;
+            el.dataset.modoCanvas = novoModo;
+            this.editor.salvarSecao(id, { estilos: { modo_canvas: novoModo } });
+            location.reload(); // Recarrega para alternar os containers
         });
 
         document.getElementById('prop-secao-tipo')?.addEventListener('change', (e) => {

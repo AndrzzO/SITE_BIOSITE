@@ -66,6 +66,12 @@ export class SelecaoManager {
         this.itemSelecionado = { tipo, id, el };
         if (el) {
             el.classList.add('is-selected');
+            if (tipo === 'elemento' && el.closest('.canvas-livre-box')) {
+                el.classList.add('canvas-selected');
+                if (this.editor.canvasLivreManager) {
+                    this.editor.canvasLivreManager.selecionados = [el];
+                }
+            }
         }
 
         // Notifica o painel de propriedades
@@ -73,14 +79,21 @@ export class SelecaoManager {
             this.editor.propriedadesManager.carregarPropriedades(tipo, id, el);
         }
 
-        // Sincroniza destaque na árvore de estrutura
+        // Sincroniza destaque na árvore de estrutura e no painel de camadas
         this.destacarNaArvore(tipo, id);
+        if (this.editor.atualizarPainelCamadas) {
+            this.editor.atualizarPainelCamadas();
+        }
     }
 
     desmarcar(fecharPainel = true) {
-        document.querySelectorAll('.is-selected').forEach(el => {
-            el.classList.remove('is-selected');
+        document.querySelectorAll('.is-selected, .canvas-selected, .canvas-multi-selected').forEach(el => {
+            el.classList.remove('is-selected', 'canvas-selected', 'canvas-multi-selected');
         });
+
+        if (this.editor.canvasLivreManager) {
+            this.editor.canvasLivreManager.selecionados = [];
+        }
 
         this.itemSelecionado = null;
 
@@ -91,6 +104,10 @@ export class SelecaoManager {
         document.querySelectorAll('.arvore-item.is-selected').forEach(el => {
             el.classList.remove('is-selected');
         });
+
+        if (this.editor.atualizarPainelCamadas) {
+            this.editor.atualizarPainelCamadas();
+        }
     }
 
     destacarNaArvore(tipo, id) {

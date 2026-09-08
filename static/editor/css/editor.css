@@ -1452,3 +1452,294 @@ body.editor-active {
     color: var(--studio-text);
 }
 
+/* ==========================================================================
+   CANVAS LIVRE — Google Sites + Canva + Paint (Prompt Reformulação)
+   ========================================================================== */
+
+/* Seção em Modo Livre */
+.canvas-livre-section {
+    position: relative;
+    overflow: visible;
+}
+
+.canvas-livre-box {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+    transition: min-height 0.1s ease;
+    overflow: visible;
+}
+
+/* Grade de Alinhamento (Grid Overlay) */
+.canvas-livre-box.canvas-grade-ativa {
+    background-image:
+        linear-gradient(to right, rgba(56, 189, 248, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.12) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Alça inferior de redimensionamento da seção */
+.secao-resize-handle {
+    height: 14px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--studio-accent);
+    font-size: 11px;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+    border-top: 1px dashed rgba(56, 189, 248, 0.3);
+}
+
+.secao-resize-handle:hover {
+    background: rgba(56, 189, 248, 0.3);
+    color: #ffffff;
+}
+
+.editor-secao-badge-livre {
+    font-size: 0.6rem;
+    font-weight: 700;
+    background: rgba(56, 189, 248, 0.2);
+    color: var(--studio-accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Drop Zone Ativa */
+.canvas-drop-active {
+    outline: 2px dashed var(--studio-accent) !important;
+    background-color: rgba(56, 189, 248, 0.05) !important;
+}
+
+/* Elemento Selecionado no Canvas Livre */
+.editor-elemento-wrapper.canvas-selected {
+    outline: 2px solid var(--studio-accent) !important;
+    z-index: 100 !important;
+}
+
+.editor-elemento-wrapper.canvas-selected .editor-elemento-toolbar {
+    display: flex !important;
+}
+
+.editor-elemento-wrapper.canvas-multi-selected {
+    outline: 2px dashed #a855f7 !important;
+}
+
+/* 8 Alças de Redimensionamento (Handles) */
+.canvas-resize-handle {
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border: 2px solid var(--studio-accent);
+    border-radius: 2px;
+    position: absolute;
+    z-index: 110;
+    display: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+}
+
+.editor-elemento-wrapper.canvas-selected .canvas-resize-handle {
+    display: block;
+}
+
+.canvas-resize-handle.handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.canvas-resize-handle.handle-n  { top: -5px; left: calc(50% - 4px); cursor: ns-resize; }
+.canvas-resize-handle.handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.canvas-resize-handle.handle-e  { top: calc(50% - 4px); right: -5px; cursor: ew-resize; }
+.canvas-resize-handle.handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.canvas-resize-handle.handle-s  { bottom: -5px; left: calc(50% - 4px); cursor: ns-resize; }
+.canvas-resize-handle.handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.canvas-resize-handle.handle-w  { top: calc(50% - 4px); left: -5px; cursor: ew-resize; }
+
+/* Retângulo de Seleção em Área (Marquee / Rect Selection) */
+.canvas-selection-rect {
+    position: absolute;
+    border: 1px dashed var(--studio-accent);
+    background: rgba(56, 189, 248, 0.12);
+    pointer-events: none;
+    z-index: 999;
+}
+
+/* Menu de Contexto (Botão Direito no Canvas Livre) */
+.canvas-context-menu {
+    position: fixed;
+    z-index: 9999;
+    background: var(--studio-surface);
+    border: 1px solid var(--studio-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    padding: 4px 0;
+    min-width: 175px;
+    font-size: 0.8125rem;
+    user-select: none;
+}
+
+.canvas-context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.canvas-context-menu li {
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--studio-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.1s, color 0.1s;
+}
+
+.canvas-context-menu li:hover {
+    background: var(--studio-surface-alt);
+    color: var(--studio-accent);
+}
+
+.canvas-context-menu li.ctx-danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.canvas-context-menu .ctx-divider {
+    height: 1px;
+    background: var(--studio-border);
+    margin: 4px 0;
+    padding: 0;
+}
+
+/* Linhas de Guias Inteligentes (Smart Guides) */
+.canvas-guide {
+    position: absolute;
+    background: #38bdf8;
+    z-index: 500;
+    pointer-events: none;
+}
+
+.canvas-guide-h {
+    height: 1px;
+    left: 0;
+    right: 0;
+}
+
+.canvas-guide-v {
+    width: 1px;
+    top: 0;
+    bottom: 0;
+}
+
+/* Botões Utilitários de Topbar / Barra de Ferramentas */
+.btn-studio-tool {
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    color: var(--studio-text-muted);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.btn-studio-tool:hover {
+    color: var(--studio-text);
+    border-color: var(--studio-accent);
+    background: rgba(56, 189, 248, 0.08);
+}
+
+.btn-studio-tool.active {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--studio-accent);
+    color: var(--studio-accent);
+    font-weight: 600;
+}
+
+.btn-studio-tool:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-studio-tool-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.btn-studio-tool-group .btn-studio-tool {
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem 0.45rem;
+    background: transparent;
+}
+
+.btn-studio-tool-group .btn-studio-tool:hover {
+    background: var(--studio-surface);
+}
+
+/* Painel de Camadas (Layers) */
+.layers-lista {
+    display: flex;
+    flex-direction: column-reverse; /* Maior z-index no topo */
+    gap: 4px;
+    padding: 0.5rem 0;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.6rem;
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--studio-text-muted);
+    transition: all 0.12s ease;
+}
+
+.layer-item:hover {
+    border-color: #4b5563;
+    color: var(--studio-text);
+}
+
+.layer-item.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: var(--studio-accent);
+    color: var(--studio-accent);
+    font-weight: 600;
+}
+
+.layer-item-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.layer-item-z {
+    font-size: 0.65rem;
+    background: var(--studio-surface);
+    color: var(--studio-text-muted);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-mono: monospace;
+}
+

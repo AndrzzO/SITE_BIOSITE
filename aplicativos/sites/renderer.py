@@ -74,6 +74,15 @@ class RenderizadorBioSite:
             "animacao": "animation",
             "animation": "animation",
             "backdrop_filter": "backdrop-filter",
+            "imagem_fundo": "background-image",
+            "background-image": "background-image",
+            "gradiente": "background-image",
+            "filter": "filter",
+            "filtro": "filter",
+            "object-fit": "object-fit",
+            "object_fit": "object-fit",
+            "z-index": "z-index",
+            "z_index": "z-index",
         }
 
         mapa_sombras = {
@@ -162,7 +171,11 @@ class RenderizadorBioSite:
         return "\n".join(css_regras)
 
     def renderizar_elemento(self, elemento: ElementoSite) -> SafeString:
-        """Renderiza um ElementoSite com ou sem invólucros do editor."""
+        """Renderiza um ElementoSite com ou sem invólucros do editor.
+
+        Em modo editor e seção LIVRE: adiciona atributos de posição (data-x-pct, data-y-px,
+        data-w-pct, data-h-px, data-h-auto, data-z-index) e style position:absolute.
+        """
         definicao = RegistroElementos.obter(elemento.tipo)
         html_conteudo = definicao.render(elemento)
 
@@ -171,12 +184,37 @@ class RenderizadorBioSite:
         tag_style = format_html("<style>{}</style>", mark_safe(estilos_css)) if estilos_css else ""
 
         if self.eh_editor:
+            # Lê dados de posicionamento do canvas livre (se existirem)
+            posicao = (
+                elemento.estilos.get("posicao", {}) if isinstance(elemento.estilos, dict) else {}
+            )
+            x_pct = posicao.get("x_pct", 10.0)
+            y_px = posicao.get("y_px", 20)
+            w_pct = posicao.get("w_pct", 80.0)
+            h_px = posicao.get("h_px")
+            h_auto = posicao.get("h_auto", True) or h_px is None
+            z_index = posicao.get("z_index", 1)
+
+            # Style inline para modo livre (o JS substitui se não for modo livre)
+            pos_style = (
+                f"position:absolute;left:{x_pct:.2f}%;top:{y_px:.0f}px;"
+                f"width:{w_pct:.2f}%;z-index:{z_index};"
+                + (f"height:{h_px:.0f}px;" if not h_auto and h_px else "")
+            )
+
             return format_html(
                 """
                 <div class="editor-elemento-wrapper biosite-elemento {}"
                      data-elemento-id="{}"
                      data-tipo="{}"
-                     data-ordem="{}">
+                     data-ordem="{}"
+                     data-x-pct="{}"
+                     data-y-px="{}"
+                     data-w-pct="{}"
+                     data-h-px="{}"
+                     data-h-auto="{}"
+                     data-z-index="{}"
+                     style="{}">
                     <div class="editor-elemento-toolbar">
                         <span class="editor-elemento-badge">{}</span>
                         <div class="editor-elemento-acoes">
@@ -193,7 +231,37 @@ class RenderizadorBioSite:
                 elemento.id,
                 elemento.tipo,
                 elemento.ordem,
+                f"{x_pct:.4f}",
+                f"{y_px:.0f}",
+                f"{w_pct:.4f}",
+                f"{h_px:.0f}" if h_px is not None else "0",
+                "false" if not h_auto else "true",
+                z_index,
+                pos_style,
                 definicao.nome,
+                mark_safe(tag_style),
+                mark_safe(html_conteudo),
+            )
+
+        # Modo público / preview — aplica posição absoluta se existir
+        posicao = elemento.estilos.get("posicao", {}) if isinstance(elemento.estilos, dict) else {}
+        if posicao:
+            x_pct = posicao.get("x_pct", 10.0)
+            y_px = posicao.get("y_px", 20)
+            w_pct = posicao.get("w_pct", 80.0)
+            h_px = posicao.get("h_px")
+            h_auto = posicao.get("h_auto", True) or h_px is None
+            z_index = posicao.get("z_index", 1)
+            pos_style = (
+                f"position:absolute;left:{x_pct:.2f}%;top:{y_px:.0f}px;"
+                f"width:{w_pct:.2f}%;z-index:{z_index};"
+                + (f"height:{h_px:.0f}px;" if not h_auto and h_px else "")
+            )
+            return format_html(
+                '<div class="biosite-elemento biosite-elem-tipo-{} {}" style="{}">{}{}</div>',
+                elemento.tipo.lower(),
+                classe_seletor,
+                pos_style,
                 mark_safe(tag_style),
                 mark_safe(html_conteudo),
             )
@@ -273,7 +341,12 @@ class RenderizadorBioSite:
         )
 
     def renderizar_secao(self, secao: SecaoSite) -> SafeString:
-        """Renderiza uma SecaoSite e seus containers raiz."""
+        """Renderiza uma SecaoSite e seus containers raiz.
+
+        Suporta dois modos:
+        - modo_canvas = 'livre': container position:relative com elementos posicionados absolutamente
+        - modo_canvas = 'fluxo' (padrão): fluxo normal de documento
+        """
         containers_html = [
             self.renderizar_container(c)
             for c in secao.containers.filter(parent__isnull=True, ativo=True).order_by("ordem")
@@ -281,45 +354,113 @@ class RenderizadorBioSite:
 
         classe_seletor = f"biosite-sec-{secao.id}"
         classe_tipo = f"biosite-secao-{secao.tipo.lower()}"
+        estilos_dict = secao.estilos if isinstance(secao.estilos, dict) else {}
+        modo_canvas = estilos_dict.get("modo_canvas", "fluxo")
+        altura_min = estilos_dict.get("altura_min_px", 300)
+
         estilos_css = self.converter_estilos_para_css(secao.estilos, f".{classe_seletor}")
         tag_style = format_html("<style>{}</style>", mark_safe(estilos_css)) if estilos_css else ""
 
         if self.eh_editor:
-            return format_html(
-                """
-                <div class="editor-secao-divider" data-ordem="{}">
-                    <button type="button" class="btn-add-secao-inline" data-ordem-depois="{}">
-                        + Nova Seção
-                    </button>
-                </div>
-                <section class="editor-secao-wrapper biosite-secao {} {}"
-                         data-secao-id="{}"
-                         data-ordem="{}"
-                         data-tipo="{}">
-                    <div class="editor-secao-header">
-                        <div class="editor-secao-titulo">
-                            <span class="editor-secao-drag-handle" title="Arraste para reordenar seções">⋮⋮</span>
-                            <span class="editor-secao-nome">{}</span>
-                            <span class="editor-secao-tipo">({})</span>
-                        </div>
-                        <div class="editor-secao-acoes">
-                            <button type="button" class="btn-acao-secao" data-acao="salvar-bloco" title="Salvar seção como Bloco Reutilizável">💾</button>
-                            <button type="button" class="btn-acao-secao" data-acao="duplicar" title="Duplicar seção">⎘</button>
-                            <button type="button" class="btn-acao-secao btn-danger" data-acao="excluir" title="Excluir seção">✕</button>
-                        </div>
+            if modo_canvas == "livre":
+                # Modo livre — canvas-livre-box com position:relative e todos elementos absolutos
+                canvas_style = f"position:relative;min-height:{altura_min}px;overflow:visible;"
+                return format_html(
+                    """
+                    <div class="editor-secao-divider" data-ordem="{}">
+                        <button type="button" class="btn-add-secao-inline" data-ordem-depois="{}">
+                            + Nova Seção
+                        </button>
                     </div>
-                    {}{}
-                </section>
-                """,
-                secao.ordem,
-                secao.ordem,
+                    <section class="editor-secao-wrapper biosite-secao {} {} canvas-livre-section"
+                             data-secao-id="{}"
+                             data-ordem="{}"
+                             data-tipo="{}"
+                             data-modo-canvas="livre">
+                        <div class="editor-secao-header">
+                            <div class="editor-secao-titulo">
+                                <span class="editor-secao-drag-handle" title="Arraste para reordenar seções">⋮⋮</span>
+                                <span class="editor-secao-nome">{}</span>
+                                <span class="editor-secao-badge-livre">LIVRE</span>
+                            </div>
+                            <div class="editor-secao-acoes">
+                                <button type="button" class="btn-acao-secao" data-acao="salvar-bloco" title="Salvar como Bloco">💾</button>
+                                <button type="button" class="btn-acao-secao" data-acao="duplicar" title="Duplicar">⎘</button>
+                                <button type="button" class="btn-acao-secao btn-danger" data-acao="excluir" title="Excluir">✕</button>
+                            </div>
+                        </div>
+                        {}
+                        <div class="canvas-livre-box" style="{}" data-secao-id="{}">
+                            {}
+                        </div>
+                        <div class="secao-resize-handle" title="Arrastar para aumentar/diminuir altura da seção">⠿</div>
+                    </section>
+                    """,
+                    secao.ordem,
+                    secao.ordem,
+                    classe_tipo,
+                    classe_seletor,
+                    secao.id,
+                    secao.ordem,
+                    secao.tipo,
+                    escape(secao.nome_interno),
+                    mark_safe(tag_style),
+                    canvas_style,
+                    secao.id,
+                    mark_safe("".join(containers_html)),
+                )
+            else:
+                # Modo fluxo (padrão legado)
+                return format_html(
+                    """
+                    <div class="editor-secao-divider" data-ordem="{}">
+                        <button type="button" class="btn-add-secao-inline" data-ordem-depois="{}">
+                            + Nova Seção
+                        </button>
+                    </div>
+                    <section class="editor-secao-wrapper biosite-secao {} {}"
+                             data-secao-id="{}"
+                             data-ordem="{}"
+                             data-tipo="{}"
+                             data-modo-canvas="fluxo">
+                        <div class="editor-secao-header">
+                            <div class="editor-secao-titulo">
+                                <span class="editor-secao-drag-handle" title="Arraste para reordenar seções">⋮⋮</span>
+                                <span class="editor-secao-nome">{}</span>
+                                <span class="editor-secao-tipo">({})</span>
+                            </div>
+                            <div class="editor-secao-acoes">
+                                <button type="button" class="btn-acao-secao" data-acao="salvar-bloco" title="Salvar seção como Bloco Reutilizável">💾</button>
+                                <button type="button" class="btn-acao-secao" data-acao="duplicar" title="Duplicar seção">⎘</button>
+                                <button type="button" class="btn-acao-secao btn-danger" data-acao="excluir" title="Excluir seção">✕</button>
+                            </div>
+                        </div>
+                        {}{}
+                    </section>
+                    """,
+                    secao.ordem,
+                    secao.ordem,
+                    classe_tipo,
+                    classe_seletor,
+                    secao.id,
+                    secao.ordem,
+                    secao.tipo,
+                    escape(secao.nome_interno),
+                    secao.tipo,
+                    mark_safe(tag_style),
+                    mark_safe("".join(containers_html)),
+                )
+
+        # Modo público / preview
+        if modo_canvas == "livre":
+            canvas_style = f"position:relative;min-height:{altura_min}px;overflow:visible;"
+            return format_html(
+                '<section class="biosite-secao {} {} canvas-livre-section">'
+                '<div class="canvas-livre-box" style="{}">{}{}</div>'
+                "</section>",
                 classe_tipo,
                 classe_seletor,
-                secao.id,
-                secao.ordem,
-                secao.tipo,
-                escape(secao.nome_interno),
-                secao.tipo,
+                canvas_style,
                 mark_safe(tag_style),
                 mark_safe("".join(containers_html)),
             )

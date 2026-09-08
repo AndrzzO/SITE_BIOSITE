@@ -559,11 +559,17 @@ class EditorSecaoCriarView(RequerAutenticacaoAdministrativaMixin, View):
 
         pagina = get_object_or_404(PaginaSite, id=pagina_id, projeto=projeto)
 
+        modo_canvas = payload.get("modo_canvas", "livre")
+
         secao, container = criar_secao_com_container_padrao(
             pagina=pagina,
             nome_interno=nome_interno,
             tipo=tipo,
         )
+
+        if modo_canvas == "livre":
+            secao.estilos = {"modo_canvas": "livre", "altura_min_px": 350}
+            secao.save(update_fields=["estilos"])
 
         renderer = RenderizadorBioSite(modo="editor")
         html_secao = renderer.renderizar_secao(secao)
@@ -575,6 +581,7 @@ class EditorSecaoCriarView(RequerAutenticacaoAdministrativaMixin, View):
                 "container_id": container.id,
                 "nome_interno": secao.nome_interno,
                 "tipo": secao.tipo,
+                "modo_canvas": modo_canvas,
                 "ordem": secao.ordem,
                 "html": html_secao,
             }

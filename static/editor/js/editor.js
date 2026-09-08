@@ -10,32 +10,41 @@ import { DragDropManager } from './dragdrop.js';
 import { PropriedadesManager } from './propriedades.js';
 import { AutosaveManager } from './autosave.js';
 import { HistoricoManager } from './historico.js';
+import { CanvasLivreManager } from './canvas_livre.js';
+import { HistoricoUndoManager } from './historico_undo.js';
+import { HtmlImportManager } from './html_import.js';
 
 export class BioSiteEditorStudio {
     constructor(config) {
         this.siteUuid = config.siteUuid;
         this.paginaId = config.paginaId;
 
-        this.canvasManager = null;
-        this.selecaoManager = null;
-        this.inlineEditManager = null;
-        this.dragdropManager = null;
+        this.canvasManager      = null;
+        this.selecaoManager     = null;
+        this.inlineEditManager  = null;
+        this.dragdropManager    = null;
         this.propriedadesManager = null;
-        this.autosaveManager = null;
-        this.historicoManager = null;
+        this.autosaveManager    = null;
+        this.historicoManager   = null;
+        this.canvasLivreManager = null;
+        this.historicoUndo      = null;
+        this.htmlImportManager  = null;
 
         this.init();
     }
 
     init() {
         // Inicializa subsistemas
-        this.canvasManager = new CanvasManager();
+        this.canvasManager       = new CanvasManager();
         this.propriedadesManager = new PropriedadesManager(this);
-        this.selecaoManager = new SelecaoManager(this);
-        this.inlineEditManager = new InlineEditManager(this);
-        this.dragdropManager = new DragDropManager(this);
-        this.autosaveManager = new AutosaveManager(this);
-        this.historicoManager = new HistoricoManager(this);
+        this.selecaoManager      = new SelecaoManager(this);
+        this.inlineEditManager   = new InlineEditManager(this);
+        this.canvasLivreManager  = new CanvasLivreManager(this);
+        this.historicoUndo       = new HistoricoUndoManager(this);
+        this.dragdropManager     = new DragDropManager(this);
+        this.autosaveManager     = new AutosaveManager(this);
+        this.historicoManager    = new HistoricoManager(this);
+        this.htmlImportManager   = new HtmlImportManager(this);
 
         this.initAbasSidebar();
         this.initAcoesSecoes();
@@ -45,6 +54,153 @@ export class BioSiteEditorStudio {
         this.initSalvarComoModelo();
         this.initModalBloco();
         this.initPublicacao();
+        this.initCanvasLivre();
+        this.initControlesCanvasLivre();
+        this.initPainelCamadas();
+    }
+
+    /**
+     * Ativa o canvas livre em todas as seções que possuem data-modo-canvas="livre".
+     * Chamado após o DOM renderizar (na init e após troca de página).
+     */
+    initCanvasLivre() {
+        document.querySelectorAll('.editor-secao-wrapper[data-modo-canvas="livre"]').forEach(secaoEl => {
+            this.canvasLivreManager.ativarSecao(secaoEl);
+        });
+
+        // Ativa drop zones em todas as canvas-livre-box existentes
+        document.querySelectorAll('.canvas-livre-box').forEach(box => {
+            if (this.dragdropManager) this.dragdropManager._initDropZone(box);
+        });
+    }
+
+    /**
+     * Inicializa botões da topbar/bottombar relacionados ao canvas livre:
+     * Snap, Guias, Grade, Undo, Redo, Modo Livre/Fluxo, Alinhamento.
+     */
+    initControlesCanvasLivre() {
+        // Snap
+        const btnSnap = document.getElementById('btn-toggle-snap');
+        if (btnSnap) btnSnap.addEventListener('click', () => {
+            this.canvasLivreManager.toggleSnap();
+            btnSnap.classList.toggle('active', this.canvasLivreManager.snapAtivo);
+        });
+
+        // Guias
+        const btnGuias = document.getElementById('btn-toggle-guias');
+        if (btnGuias) btnGuias.addEventListener('click', () => {
+            this.canvasLivreManager.toggleGuias();
+            btnGuias.classList.toggle('active', this.canvasLivreManager.guiasAtivas);
+        });
+
+        // Grade
+        const btnGrade = document.getElementById('btn-toggle-grade');
+        if (btnGrade) btnGrade.addEventListener('click', () => {
+            this.canvasLivreManager.toggleGrade();
+            btnGrade.classList.toggle('active', this.canvasLivreManager.gradeAtiva);
+        });
+
+        // Undo
+        const btnDesfazer = document.getElementById('btn-desfazer');
+        if (btnDesfazer) btnDesfazer.addEventListener('click', async () => {
+            await this.historicoUndo.desfazer();
+        });
+
+        // Redo
+        const btnRefazer = document.getElementById('btn-refazer');
+        if (btnRefazer) btnRefazer.addEventListener('click', async () => {
+            await this.historicoUndo.refazer();
+        });
+
+        // Alinhamento
+        document.querySelectorAll('[data-alinhar]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tipo = btn.dataset.alinhar;
+                this.canvasLivreManager.alinhar(tipo);
+            });
+        });
+
+        // Z-Index
+        document.querySelectorAll('[data-zindex]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const acao = btn.dataset.zindex;
+                const sel  = this.selecaoManager?.itemSelecionado;
+                if (sel?.tipo === 'elemento') {
+                    await this.canvasLivreManager.alterarZIndex(sel.id, acao);
+                    this.atualizarPainelCamadas();
+                }
+            });
+        });
+    }
+
+    /**
+     * Inicializa a sincronização do Painel de Camadas (Layers Panel)
+     */
+    initPainelCamadas() {
+        const container = document.getElementById('layers-lista');
+        if (!container) return;
+
+        // Clique em um item da lista de camadas seleciona o elemento no canvas
+        container.addEventListener('click', (e) => {
+            const item = e.target.closest('.layer-item');
+            if (!item) return;
+
+            const elemId = parseInt(item.dataset.elementoId, 10);
+            const elemEl = document.querySelector(`.editor-elemento-wrapper[data-elemento-id="${elemId}"]`);
+            if (elemEl && this.selecaoManager) {
+                this.selecaoManager.selecionar('elemento', elemId, elemEl);
+                elemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    }
+
+    /**
+     * Reconstrói a lista de camadas para a seção ativa
+     */
+    atualizarPainelCamadas() {
+        const container = document.getElementById('layers-lista');
+        if (!container) return;
+
+        const secaoAtiva = document.querySelector('.editor-secao-wrapper');
+        if (!secaoAtiva) {
+            container.innerHTML = '<div style="color: var(--studio-text-muted); font-size: 0.8125rem; text-align: center; padding: 1rem 0;">Nenhuma seção ativa</div>';
+            return;
+        }
+
+        const elementos = Array.from(secaoAtiva.querySelectorAll('.editor-elemento-wrapper'));
+        if (elementos.length === 0) {
+            container.innerHTML = '<div style="color: var(--studio-text-muted); font-size: 0.8125rem; text-align: center; padding: 1rem 0;">Nenhum elemento nesta seção</div>';
+            return;
+        }
+
+        // Ordena por z-index (crescente)
+        elementos.sort((a, b) => {
+            const za = parseInt(a.style.zIndex || a.dataset.zIndex || 1, 10);
+            const zb = parseInt(b.style.zIndex || b.dataset.zIndex || 1, 10);
+            return za - zb;
+        });
+
+        const selId = this.selecaoManager?.itemSelecionado?.id;
+
+        const html = elementos.map(el => {
+            const id = el.dataset.elementoId;
+            const tipo = el.dataset.tipo || 'ELEMENTO';
+            const badge = el.querySelector('.editor-elemento-badge')?.textContent || tipo;
+            const z = el.style.zIndex || el.dataset.zIndex || 1;
+            const ativo = (selId && parseInt(id, 10) === selId) ? 'active' : '';
+
+            return `
+                <div class="layer-item ${ativo}" data-elemento-id="${id}">
+                    <div class="layer-item-info">
+                        <span style="font-size: 0.85rem;">⬚</span>
+                        <span title="${badge}">${badge}</span>
+                    </div>
+                    <span class="layer-item-z">Z: ${z}</span>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = html;
     }
 
     initAbasSidebar() {
@@ -57,6 +213,10 @@ export class BioSiteEditorStudio {
                 const targetId = tab.dataset.tab;
                 const contentEl = document.getElementById(targetId);
                 if (contentEl) contentEl.classList.add('active');
+
+                if (targetId === 'tab-camadas') {
+                    this.atualizarPainelCamadas();
+                }
             });
         });
     }
@@ -187,7 +347,9 @@ export class BioSiteEditorStudio {
 
             // Reinicializa seletores e SortableJS na nova árvore
             this.dragdropManager.init();
+            this.initCanvasLivre();
             this.selecaoManager.desmarcar();
+            this.atualizarPainelCamadas();
             this.mostrarStatusSalvo();
         } catch (err) {
             this.mostrarStatusErro(err.message);
@@ -200,7 +362,8 @@ export class BioSiteEditorStudio {
             const resp = await EditorApi.criarSecao(this.siteUuid, {
                 pagina_id: this.paginaId,
                 nome_interno: nomeInterno,
-                tipo: tipo
+                tipo: tipo,
+                modo_canvas: 'livre'
             });
 
             const secoesContainer = document.getElementById('editor-secoes-container');
@@ -212,6 +375,8 @@ export class BioSiteEditorStudio {
             }
 
             this.dragdropManager.init();
+            this.initCanvasLivre();
+            this.atualizarPainelCamadas();
             this.mostrarStatusSalvo();
         } catch (err) {
             this.mostrarStatusErro(err.message);
@@ -227,6 +392,8 @@ export class BioSiteEditorStudio {
                 secaoOrig.insertAdjacentHTML('afterend', resp.html);
             }
             this.dragdropManager.init();
+            this.initCanvasLivre();
+            this.atualizarPainelCamadas();
             this.mostrarStatusSalvo();
         } catch (err) {
             this.mostrarStatusErro(err.message);
@@ -240,6 +407,41 @@ export class BioSiteEditorStudio {
             const secaoEl = document.querySelector(`.editor-secao-wrapper[data-secao-id="${secaoId}"]`);
             if (secaoEl) secaoEl.remove();
             this.selecaoManager.desmarcar();
+            this.atualizarPainelCamadas();
+            this.mostrarStatusSalvo();
+        } catch (err) {
+            this.mostrarStatusErro(err.message);
+        }
+    }
+
+    async duplicarElemento(elementoId) {
+        try {
+            this.mostrarStatusSalvando();
+            const resp = await EditorApi.duplicarElemento(this.siteUuid, elementoId);
+            const elemOrig = document.querySelector(`.editor-elemento-wrapper[data-elemento-id="${elementoId}"]`);
+            if (elemOrig && resp.html) {
+                elemOrig.insertAdjacentHTML('afterend', resp.html);
+                const novoEl = document.querySelector(`.editor-elemento-wrapper[data-elemento-id="${resp.elemento_id}"]`);
+                if (novoEl && this.canvasLivreManager) {
+                    const box = novoEl.closest('.canvas-livre-box');
+                    if (box) this.canvasLivreManager._ativarElemento(novoEl, box);
+                }
+            }
+            this.atualizarPainelCamadas();
+            this.mostrarStatusSalvo();
+        } catch (err) {
+            this.mostrarStatusErro(err.message);
+        }
+    }
+
+    async excluirElemento(elementoId) {
+        try {
+            this.mostrarStatusSalvando();
+            await EditorApi.excluirElemento(this.siteUuid, elementoId);
+            const elemEl = document.querySelector(`.editor-elemento-wrapper[data-elemento-id="${elementoId}"]`);
+            if (elemEl) elemEl.remove();
+            this.selecaoManager.desmarcar();
+            this.atualizarPainelCamadas();
             this.mostrarStatusSalvo();
         } catch (err) {
             this.mostrarStatusErro(err.message);

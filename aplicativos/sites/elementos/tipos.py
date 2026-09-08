@@ -1078,3 +1078,252 @@ class ElementoIcone(DefinicaoElemento):
         icone_id = conteudo.get("icone", "estrela")
         svg = obter_svg_icone(icone_id)
         return format_html('<span class="elemento-icone" aria-hidden="true">{}</span>', svg)
+
+
+# -----------------------------------------------------------------------------
+# Novos Elementos do Canvas Livre (Google Sites + Canva + Paint)
+# -----------------------------------------------------------------------------
+
+
+@registro_elementos.registrar
+class ElementoVideo(DefinicaoElemento):
+    identificador = "video"
+    nome = _("Vídeo")
+    categoria = _("Mídia")
+    icone = "🎬"
+
+    def conteudo_padrao(self) -> dict[str, Any]:
+        return {
+            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "tipo_origem": "youtube",  # youtube, vimeo, url
+            "autoplay": False,
+            "muted": True,
+            "loop": False,
+            "controls": True,
+            "raio_borda": 8,
+        }
+
+    def validar_conteudo(self, conteudo: dict[str, Any]) -> None:
+        if not isinstance(conteudo, dict):
+            raise ValidationError(_("Conteúdo inválido para Vídeo."))
+        url = str(conteudo.get("url", "")).strip()
+        if not url:
+            raise ValidationError(_("A URL do vídeo é obrigatória."))
+
+    def _extrair_youtube_id(self, url: str) -> str | None:
+        padrao = r"(?:v=|\/|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})"
+        match = re.search(padrao, url)
+        return match.group(1) if match else None
+
+    def _extrair_vimeo_id(self, url: str) -> str | None:
+        padrao = r"vimeo\.com\/(?:video\/)?([0-9]+)"
+        match = re.search(padrao, url)
+        return match.group(1) if match else None
+
+    def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
+        conteudo = elemento.conteudo or self.conteudo_padrao()
+        url = str(conteudo.get("url", "")).strip()
+        autoplay = 1 if conteudo.get("autoplay") else 0
+        muted = 1 if conteudo.get("muted") else 0
+        loop = 1 if conteudo.get("loop") else 0
+        controls = 1 if conteudo.get("controls", True) else 0
+        raio = int(conteudo.get("raio_borda", 8))
+
+        # YouTube
+        yt_id = self._extrair_youtube_id(url)
+        if yt_id:
+            embed_url = (
+                f"https://www.youtube-nocookie.com/embed/{yt_id}?"
+                f"autoplay={autoplay}&mute={muted}&loop={loop}&controls={controls}"
+            )
+            return format_html(
+                '<div class="elemento-video-wrapper" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:{}px;">'
+                '<iframe src="{}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" '
+                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
+                'allowfullscreen loading="lazy"></iframe></div>',
+                raio,
+                embed_url,
+            )
+
+        # Vimeo
+        vimeo_id = self._extrair_vimeo_id(url)
+        if vimeo_id:
+            embed_url = (
+                f"https://player.vimeo.com/video/{vimeo_id}?"
+                f"autoplay={autoplay}&muted={muted}&loop={loop}"
+            )
+            return format_html(
+                '<div class="elemento-video-wrapper" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:{}px;">'
+                '<iframe src="{}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" '
+                'allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>',
+                raio,
+                embed_url,
+            )
+
+        # MP4 URL direta
+        if url.endswith(".mp4") or url.endswith(".webm"):
+            attrs = ["playsinline"]
+            if autoplay:
+                attrs.append("autoplay")
+            if muted:
+                attrs.append("muted")
+            if loop:
+                attrs.append("loop")
+            if controls:
+                attrs.append("controls")
+            attrs_str = " ".join(attrs)
+            return format_html(
+                '<div class="elemento-video-wrapper" style="width:100%;border-radius:{}px;overflow:hidden;">'
+                '<video src="{}" style="width:100%;display:block;" {} preload="metadata"></video></div>',
+                raio,
+                url,
+                mark_safe(attrs_str),
+            )
+
+        # Fallback para URL genérica embed
+        return format_html(
+            '<div class="elemento-video-wrapper" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:{}px;">'
+            '<iframe src="{}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" '
+            'allowfullscreen loading="lazy"></iframe></div>',
+            raio,
+            url,
+        )
+
+
+@registro_elementos.registrar
+class ElementoForma(DefinicaoElemento):
+    identificador = "forma"
+    nome = _("Forma / Bloco")
+    categoria = _("Estrutura")
+    icone = "⬛"
+
+    def conteudo_padrao(self) -> dict[str, Any]:
+        return {
+            "subtipo": "retangulo",  # "retangulo", "circulo", "cartao"
+            "cor_fundo": "#38bdf8",
+            "opacidade": 1.0,
+            "cor_borda": "transparent",
+            "largura_borda": 0,
+            "raio_borda": 8,
+            "sombra": "nenhuma",  # nenhuma, suave, media, forte
+        }
+
+    def validar_conteudo(self, conteudo: dict[str, Any]) -> None:
+        if not isinstance(conteudo, dict):
+            raise ValidationError(_("Conteúdo inválido para Forma."))
+
+    def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
+        conteudo = elemento.conteudo or self.conteudo_padrao()
+        subtipo = conteudo.get("subtipo", "retangulo")
+        cor_fundo = conteudo.get("cor_fundo", "#38bdf8")
+        opacidade = float(conteudo.get("opacidade", 1.0))
+        cor_borda = conteudo.get("cor_borda", "transparent")
+        largura_borda = int(conteudo.get("largura_borda", 0))
+        raio_borda = int(conteudo.get("raio_borda", 8))
+
+        if subtipo == "circulo":
+            raio_borda = 9999
+
+        mapa_sombras = {
+            "nenhuma": "none",
+            "suave": "0 2px 8px -2px rgba(0, 0, 0, 0.08)",
+            "media": "0 6px 16px -4px rgba(0, 0, 0, 0.15)",
+            "forte": "0 12px 28px -6px rgba(0, 0, 0, 0.25)",
+        }
+        sombra = mapa_sombras.get(str(conteudo.get("sombra", "nenhuma")), "none")
+
+        style = (
+            f"background-color: {cor_fundo}; opacity: {opacidade}; "
+            f"border: {largura_borda}px solid {cor_borda}; "
+            f"border-radius: {raio_borda}px; box-shadow: {sombra}; "
+            f"width: 100%; height: 100%; min-height: 40px;"
+        )
+
+        return format_html('<div class="elemento-forma" style="{}"></div>', mark_safe(style))
+
+
+@registro_elementos.registrar
+class ElementoHtmlEmbed(DefinicaoElemento):
+    identificador = "html_embed"
+    nome = _("Código HTML / Embed")
+    categoria = _("Avançado")
+    icone = "💻"
+
+    def conteudo_padrao(self) -> dict[str, Any]:
+        return {
+            "codigo_html": "<div style='padding:1rem;text-align:center;'>Bloco HTML Customizado</div>",
+            "altura_px": 120,
+        }
+
+    def validar_conteudo(self, conteudo: dict[str, Any]) -> None:
+        if not isinstance(conteudo, dict):
+            raise ValidationError(_("Conteúdo inválido para HTML Embed."))
+        codigo = conteudo.get("codigo_html", "")
+        if len(str(codigo)) > 50000:
+            raise ValidationError(_("O código HTML não pode exceder 50.000 caracteres."))
+
+    def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
+        conteudo = elemento.conteudo or self.conteudo_padrao()
+        codigo = str(conteudo.get("codigo_html", ""))
+        altura = int(conteudo.get("altura_px", 120))
+
+        # Isolamento absoluto via iframe sandbox com srcdoc
+        # O iframe impede vazamento de CSS e protege cookies/localStorage do admin
+        codigo_escapado = escape(codigo)
+        return format_html(
+            '<div class="elemento-html-embed" style="width:100%;overflow:hidden;min-height:{}px;">'
+            '<iframe srcdoc="{}" sandbox="allow-scripts" '
+            'style="width:100%;height:{}px;border:none;display:block;" loading="lazy"></iframe>'
+            "</div>",
+            altura,
+            mark_safe(codigo_escapado),
+            altura,
+        )
+
+
+@registro_elementos.registrar
+class ElementoLogo(DefinicaoElemento):
+    identificador = "logo"
+    nome = _("Logo da Marca")
+    categoria = _("Mídia")
+    icone = "🏷️"
+
+    def conteudo_padrao(self) -> dict[str, Any]:
+        return {
+            "url_imagem": "",
+            "texto_alternativo": "Logo",
+            "largura_px": 140,
+            "link_url": "",
+        }
+
+    def validar_conteudo(self, conteudo: dict[str, Any]) -> None:
+        if not isinstance(conteudo, dict):
+            raise ValidationError(_("Conteúdo inválido para Logo."))
+
+    def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
+        conteudo = elemento.conteudo or self.conteudo_padrao()
+        url = conteudo.get("url_imagem", "").strip()
+        alt = escape(conteudo.get("texto_alternativo", "Logo"))
+        largura = int(conteudo.get("largura_px", 140))
+        link = conteudo.get("link_url", "").strip()
+
+        if url:
+            tag_img = format_html(
+                '<img src="{}" alt="{}" style="max-width:{}px;width:100%;height:auto;display:block;margin:0 auto;" loading="lazy">',
+                url,
+                alt,
+                largura,
+            )
+        else:
+            tag_img = format_html(
+                '<div style="font-size:1.25rem;font-weight:800;letter-spacing:-0.5px;text-align:center;">{}</div>',
+                alt,
+            )
+
+        if link:
+            return format_html(
+                '<a href="{}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;">{}</a>',
+                link,
+                tag_img,
+            )
+        return tag_img
