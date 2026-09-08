@@ -152,14 +152,15 @@ class ProjetoSite(ModeloBase):
     def __str__(self) -> str:
         return self.nome
 
-    def obter_url_publica(self, request=None) -> str:
-        """Retorna a URL pública canônica do BioSite (/b/<slug>/)."""
-        from django.urls import reverse
+    def obter_endereco_principal(self):
+        """Retorna o EnderecoSite marcado como principal, se houver."""
+        return self.enderecos.filter(principal=True).first()
 
-        caminho = reverse("publico:site_publico", kwargs={"slug": self.slug})
-        if request is not None:
-            return request.build_absolute_uri(caminho)
-        return caminho
+    def obter_url_publica(self, request=None, caminho: str = "") -> str:
+        """Retorna a URL pública canônica do BioSite baseada no endereço principal ou fallback /b/<slug>/."""
+        from .servicos_dominios import obter_url_publica_projeto
+
+        return obter_url_publica_projeto(self, request=request, caminho=caminho)
 
     def tem_alteracoes_nao_publicadas(self) -> bool:
         """Verifica se o rascunho atual possui alterações ainda não publicadas."""
@@ -995,3 +996,164 @@ class PublicacaoSite(ModeloBase):
     def __str__(self) -> str:
         status_txt = " [ATIVA]" if self.ativa else ""
         return f"{self.projeto.nome} — v{self.numero_versao}{status_txt}"
+
+
+class EnderecoSite(ModeloBase):
+    """
+    Representa um endereço de acesso web (subdomínio da plataforma ou domínio personalizado)
+    vinculado a um ProjetoSite.
+
+    REGRA FUNDAMENTAL:
+    O domínio identifica o ProjetoSite; o ProjetoSite identifica a PublicacaoSite atual no ar.
+    Apenas um endereço por projeto pode ter principal=True.
+    """
+
+    class Tipo(models.TextChoices):
+        SUBDOMINIO_PLATAFORMA = "subdominio_plataforma", _("Subdomínio da Plataforma")
+        DOMINIO_PERSONALIZADO = "dominio_personalizado", _("Domínio Personalizado")
+
+    class Status(models.TextChoices):
+        PENDENTE = "pendente", _("Pendente de Verificação")
+        VERIFICADO = "verificado", _("Verificado / Pronto")
+        ATIVO = "ativo", _("Ativo no Ar")
+        ERRO = "erro", _("Falha de Configuração DNS")
+        REMOVIDO = "removido", _("Removido")
+
+    projeto = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.CASCADE,
+        related_name="enderecos",
+        verbose_name=_("Projeto"),
+    )
+    host = models.CharField(
+        _("Host / Domínio Completo"),
+        max_length=255,
+        unique=True,
+        db_index=True,
+        help_text=_(
+            "Hostname normalizado e sem protocolo (ex: joao.seudominio.com ou www.joao.com.br)."
+        ),
+    )
+    subdominio = models.CharField(
+        _("Subdomínio"),
+        max_length=63,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text=_("Identificador do subdomínio da plataforma (ex: 'joao')."),
+    )
+    tipo = models.CharField(
+        _("Tipo de Endereço"),
+        max_length=30,
+        choices=Tipo.choices,
+        default=Tipo.SUBDOMINIO_PLATAFORMA,
+        db_index=True,
+    )
+    status = models.CharField(
+        _("Status"),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDENTE,
+        db_index=True,
+    )
+    principal = models.BooleanField(
+        _("Endereço Principal"),
+        default=False,
+        db_index=True,
+        help_text=_("Endereço oficial para SEO canonical, compartilhamento, links e NFC."),
+    )
+    token_verificacao = models.CharField(
+        _("Token de Verificação DNS"),
+        max_length=64,
+        blank=True,
+        help_text=_("Token criptográfico para verificação de propriedade via registro TXT."),
+    )
+    verificado_em = models.DateTimeField(
+        _("Verificado em"),
+        null=True,
+        blank=True,
+    )
+    ultima_checagem_em = models.DateTimeField(
+        _("Última Checagem em"),
+        null=True,
+        blank=True,
+    )
+    erro_mensagem = models.TextField(
+        _("Mensagem de Erro"),
+        blank=True,
+    )
+    metadata = models.JSONField(
+        _("Metadados"),
+        default=dict,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = _("endereço do site")
+        verbose_name_plural = _("endereços dos sites")
+        ordering = ["-principal", "tipo", "host"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["projeto"],
+                condition=models.Q(principal=True),
+                name="unique_endereco_principal_por_projeto",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.host} ({'Principal' if self.principal else 'Alias'})"
+
+    def clean(self):
+        super().clean()
+        from .validadores_dominios import normalizar_host, validar_formato_host
+
+        self.host = normalizar_host(self.host)
+        validar_formato_host(self.host)
+
+    def save(self, *args, **kwargs):
+        from .validadores_dominios import normalizar_host
+
+        if self.host:
+            self.host = normalizar_host(self.host)
+        super().save(*args, **kwargs)
+
+
+class HistoricoEnderecoSite(ModeloBase):
+    """
+    Armazena o histórico de endereços que pertenceram a projetos, permitindo redirecionamentos 301
+    legados e prevenindo o sequestro imediato (domain takeover) de subdomínios desvinculados.
+    """
+
+    host = models.CharField(
+        _("Host"),
+        max_length=255,
+        db_index=True,
+    )
+    projeto = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.CASCADE,
+        related_name="historico_enderecos",
+        verbose_name=_("Projeto"),
+    )
+    motivo = models.CharField(
+        _("Motivo"),
+        max_length=50,
+        default="alteracao",
+        help_text=_("Ex: alteracao_subdominio, remocao_dominio, arquivamento."),
+    )
+    reservado_ate = models.DateTimeField(
+        _("Reservado Até"),
+        null=True,
+        blank=True,
+        help_text=_(
+            "Período de quarentena durante o qual o endereço não pode ser reivindicado por outro cliente."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("histórico de endereço")
+        verbose_name_plural = _("histórico de endereços")
+        ordering = ["-criado_em"]
+
+    def __str__(self) -> str:
+        return f"{self.host} -> {self.projeto.nome} ({self.motivo})"

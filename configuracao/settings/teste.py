@@ -1,12 +1,16 @@
 """Configurações para o ambiente de testes automatizados."""
 
+from aplicativos.sites.allowed_hosts import DynamicAllowedHosts
+
 from .base import *
 
 DEBUG = False
 
 SECRET_KEY = "chave-secreta-para-ambiente-de-testes-automatizados-segura"
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+ALLOWED_HOSTS = DynamicAllowedHosts(
+    ["localhost", "127.0.0.1", "testserver", ".testserver", ".localhost"]
+)
 
 # Banco de dados isolado em memória para os testes (nunca afeta banco real)
 DATABASES = {

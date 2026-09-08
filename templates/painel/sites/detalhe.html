@@ -192,6 +192,168 @@
             {% endif %}
         </div>
 
+        <!-- Card: Endereços & Domínios (Prompt 9) -->
+        <div class="detail-card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
+                <h3 style="font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    🌐 Endereços & Domínios
+                </h3>
+                <span style="font-size: 0.75rem; color: var(--painel-text-muted);">
+                    Multi-Site & Host Seguro
+                </span>
+            </div>
+
+            <!-- Subdomínio da Plataforma -->
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.75rem; color: var(--painel-text-muted); font-weight: 700; text-transform: uppercase;">
+                        Subdomínio da Plataforma
+                    </label>
+                    {% if subdominio_atual and subdominio_atual.principal %}
+                        <span style="font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: var(--painel-accent); font-weight: 700;">
+                            ⭐ Endereço Principal
+                        </span>
+                    {% endif %}
+                </div>
+                <form method="post" action="{% url 'painel:site_configurar_subdominio' site.uuid %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                            <input type="text" name="subdominio" value="{{ subdominio_atual.subdominio|default:site.slug }}" required pattern="[a-z0-9-]+" class="form-input" style="font-size: 0.875rem; font-family: monospace; padding-right: 140px;" placeholder="meu-site">
+                            <span style="position: absolute; right: 10px; font-size: 0.8125rem; color: var(--painel-text-muted); pointer-events: none; font-family: monospace;">
+                                .{{ base_domain }}
+                            </span>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-sm" style="white-space: nowrap;">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+                {% if subdominio_atual %}
+                    <div style="font-size: 0.75rem; color: var(--painel-text-muted); margin-top: 0.4rem;">
+                        Host ativo: <code>{{ subdominio_atual.host }}</code>
+                        {% if not subdominio_atual.principal %}
+                            &bull;
+                            <form method="post" action="{% url 'painel:site_definir_dominio_principal' site.uuid subdominio_atual.id %}" style="display: inline; margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" style="background: none; border: none; color: var(--painel-accent); font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 0;">
+                                    Tornar Principal
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Domínios Personalizados -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <label style="font-size: 0.75rem; color: var(--painel-text-muted); font-weight: 700; text-transform: uppercase;">
+                        Domínios Personalizados (Próprios)
+                    </label>
+                </div>
+
+                <!-- Formulário para Adicionar Novo Domínio -->
+                <form method="post" action="{% url 'painel:site_adicionar_dominio' site.uuid %}" style="margin-bottom: 1.25rem;">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" name="host" required placeholder="ex: www.meusite.com.br" class="form-input" style="font-size: 0.875rem;">
+                        <button type="submit" class="btn btn-primary btn-sm" style="white-space: nowrap;">
+                            + Adicionar
+                        </button>
+                    </div>
+                    <small style="font-size: 0.75rem; color: var(--painel-text-muted); display: block; margin-top: 0.25rem;">
+                        Informe o domínio ou subdomínio próprio que deseja vincular.
+                    </small>
+                </form>
+
+                <!-- Lista de Domínios Cadastrados -->
+                {% if dominios_personalizados %}
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        {% for dom in dominios_personalizados %}
+                            <div style="padding: 0.85rem; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--painel-border);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <strong style="font-family: monospace; font-size: 0.875rem;">{{ dom.host }}</strong>
+                                        {% if dom.principal %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700;">
+                                                ⭐ Principal
+                                            </span>
+                                        {% endif %}
+                                        {% if dom.status == 'ativo' %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: rgba(16, 185, 129, 0.15); color: #34d399;">Ativo</span>
+                                        {% elif dom.status == 'verificado' %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Verificado</span>
+                                        {% elif dom.status == 'pendente' %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">Pendente DNS</span>
+                                        {% elif dom.status == 'erro' %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 9999px; background: rgba(239, 68, 68, 0.15); color: #f87171;">Erro DNS</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                        <form method="post" action="{% url 'painel:site_verificar_dominio' site.uuid dom.id %}" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Checar apontamento DNS">
+                                                🔄 Checar DNS
+                                            </button>
+                                        </form>
+                                        {% if dom.status == 'verificado' or dom.status == 'ativo' %}
+                                            {% if not dom.principal %}
+                                                <form method="post" action="{% url 'painel:site_definir_dominio_principal' site.uuid dom.id %}" style="margin: 0;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #34d399;" title="Definir este como endereço principal do BioSite">
+                                                        ⭐ Definir Principal
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                        <form method="post" action="{% url 'painel:site_remover_dominio' site.uuid dom.id %}" onsubmit="return confirm('Deseja desvincular o domínio {{ dom.host }} deste projeto?');" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #ef4444;" title="Remover domínio">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Instruções DNS caso PENDENTE ou ERRO -->
+                                {% if dom.status == 'pendente' or dom.status == 'erro' %}
+                                    <div style="margin-top: 0.75rem; padding: 0.75rem; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px dashed rgba(245, 158, 11, 0.4); font-size: 0.8125rem;">
+                                        <div style="font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+                                            ⚙️ Como configurar no seu provedor de DNS (ex: Registro.br, Cloudflare):
+                                        </div>
+                                        <div style="margin-bottom: 0.4rem;">
+                                            <strong>1. Validação (TXT):</strong><br>
+                                            Nome / Entrada: <code>_site-verification.{{ dom.host }}</code><br>
+                                            Valor / Destino: <code>biosite-verification={{ dom.token_verificacao }}</code>
+                                            <button type="button" onclick="navigator.clipboard.writeText('biosite-verification={{ dom.token_verificacao }}'); alert('Token copiado!');" style="background: none; border: none; color: var(--painel-accent); cursor: pointer; text-decoration: underline; font-size: 0.75rem; margin-left: 0.5rem;">
+                                                Copiar Valor
+                                            </button>
+                                        </div>
+                                        <div>
+                                            <strong>2. Tráfego (CNAME):</strong><br>
+                                            Nome / Entrada: <code>{{ dom.host }}</code><br>
+                                            Valor / Destino: <code>{{ cname_target }}</code>
+                                        </div>
+                                        {% if dom.erro_mensagem %}
+                                            <div style="margin-top: 0.5rem; color: #f87171; font-size: 0.75rem;">
+                                                ⚠️ Última checagem: {{ dom.erro_mensagem }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="font-size: 0.8125rem; color: var(--painel-text-muted); margin: 0;">
+                        Nenhum domínio personalizado configurado. Você pode cadastrar um domínio próprio como <code>www.seunome.com.br</code>.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="detail-card">
             <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
                 Dados Administrativos

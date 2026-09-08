@@ -2,6 +2,8 @@
 
 from django.core.exceptions import ImproperlyConfigured
 
+from aplicativos.sites.allowed_hosts import DynamicAllowedHosts
+
 from .base import *
 
 # Em produção, DEBUG é obrigatoriamente False
@@ -16,11 +18,12 @@ if not SECRET_KEY or "insecure" in SECRET_KEY or SECRET_KEY == "troque-esta-chav
     )
 
 # Hosts permitidos obrigatórios via variável de ambiente
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-if not ALLOWED_HOSTS:
+_raw_allowed_hosts = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+if not _raw_allowed_hosts:
     raise ImproperlyConfigured(
         "A variável de ambiente DJANGO_ALLOWED_HOSTS é obrigatória em produção."
     )
+ALLOWED_HOSTS = DynamicAllowedHosts(_raw_allowed_hosts)
 
 # Origens confiáveis para proteção CSRF
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])

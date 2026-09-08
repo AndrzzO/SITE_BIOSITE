@@ -166,6 +166,19 @@ class ProjetoSiteDetailView(RequerAutenticacaoAdministrativaMixin, DetailView):
         context["tem_alteracoes_pendentes"] = (
             projeto.tem_alteracoes_nao_publicadas() if projeto.esta_publicado() else False
         )
+        from .models import EnderecoSite
+        from .servicos_dns import obter_cname_esperado
+        from .servicos_dominios import obter_base_domain
+
+        context["subdominio_atual"] = projeto.enderecos.filter(
+            tipo=EnderecoSite.Tipo.SUBDOMINIO_PLATAFORMA
+        ).first()
+        context["dominios_personalizados"] = projeto.enderecos.filter(
+            tipo=EnderecoSite.Tipo.DOMINIO_PERSONALIZADO
+        ).order_by("-principal", "-criado_em")
+        context["endereco_principal"] = projeto.obter_endereco_principal()
+        context["base_domain"] = obter_base_domain()
+        context["cname_target"] = obter_cname_esperado()
         return context
 
 

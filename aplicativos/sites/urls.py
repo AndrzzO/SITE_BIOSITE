@@ -11,6 +11,13 @@ from .views import (
     ProjetoSiteUpdateView,
     WorkspaceSitesView,
 )
+from .views_dominios import (
+    AdicionarDominioPersonalizadoView,
+    ConfigurarSubdominioView,
+    DefinirDominioPrincipalView,
+    RemoverDominioView,
+    VerificarDnsDominioView,
+)
 from .views_editor import (
     EditorDadosJsonView,
     EditorElementoCriarView,
@@ -106,6 +113,32 @@ urlpatterns = [
         name="publicacao_restaurar_editor",
     ),
     path("<uuid:uuid>/despublicar/", DespublicarProjetoView.as_view(), name="site_despublicar"),
+    # Subdomínios e Domínios Personalizados (Prompt 9)
+    path(
+        "<uuid:uuid>/dominios/subdominio/",
+        ConfigurarSubdominioView.as_view(),
+        name="site_configurar_subdominio",
+    ),
+    path(
+        "<uuid:uuid>/dominios/adicionar/",
+        AdicionarDominioPersonalizadoView.as_view(),
+        name="site_adicionar_dominio",
+    ),
+    path(
+        "<uuid:uuid>/dominios/<int:endereco_id>/verificar/",
+        VerificarDnsDominioView.as_view(),
+        name="site_verificar_dominio",
+    ),
+    path(
+        "<uuid:uuid>/dominios/<int:endereco_id>/principal/",
+        DefinirDominioPrincipalView.as_view(),
+        name="site_definir_dominio_principal",
+    ),
+    path(
+        "<uuid:uuid>/dominios/<int:endereco_id>/remover/",
+        RemoverDominioView.as_view(),
+        name="site_remover_dominio",
+    ),
     # Editor Visual Mobile-First e Preview (Prompt 5 & 6)
     path("<uuid:uuid>/editor/", EditorStudioView.as_view(), name="site_editor"),
     path("<uuid:uuid>/editor/dados/", EditorDadosJsonView.as_view(), name="site_editor_dados"),

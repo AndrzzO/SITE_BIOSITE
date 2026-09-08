@@ -538,7 +538,46 @@ python manage.py verificar_publicacoes
 
 ---
 
-## 15. Qualidade de Código e Lint
+## 15. Subdomínios, Domínios Personalizados e Resolução Segura de Host (Prompt 9)
+
+A plataforma implementa hospedagem centralizada multi-site em uma única instância Django, suportando subdomínios da plataforma e domínios próprios personalizados com isolamento rigoroso de segurança e proteção contra *Host Header Poisoning*.
+
+### 15.1 Modelagem de Endereços (`EnderecoSite` e `HistoricoEnderecoSite`)
+- **`EnderecoSite`**: Registra cada host normalizado vinculado a um projeto:
+  - Tipo: `SUBDOMINIO_PLATAFORMA` ou `DOMINIO_PERSONALIZADO`.
+  - Status: `PENDENTE`, `VERIFICADO`, `ATIVO`, `ERRO`, `REMOVIDO`.
+  - Flag `principal`: exatamente um endereço principal ativo por projeto (assegurado por constraint de banco `UniqueConstraint(condition=Q(principal=True))`).
+  - `token_verificacao`: token criptograficamente seguro (`secrets.token_urlsafe(32)`).
+- **`HistoricoEnderecoSite`**: Registra quarentena de domínios e subdomínios desvinculados por 30 dias, prevenindo ataques de *domain takeover* e colisões imediatas.
+
+### 15.2 Coleção Segura de Hosts (`DynamicAllowedHosts`)
+- Django rejeita por padrão qualquer host fora de `ALLOWED_HOSTS` com HTTP 400.
+- `DynamicAllowedHosts(list)` provê validação segura em tempo real combinando:
+  1. Hosts estáticos da plataforma (`localhost`, `127.0.0.1`, base domain e wildcard `.basedomain`).
+  2. Domínios personalizados **ativos ou verificados** consultados no banco e mantidos em cache.
+- **Benefício**: Zero reinicialização do servidor ao cadastrar novos domínios e **sem** abrir a brecha insegura de `ALLOWED_HOSTS = ["*"]`.
+
+### 15.3 Resolução Dinâmica e Barreira de Segurança (`HostRoutingMiddleware`)
+- **Classificação**: Classifica cada requisição em `HOST_PLATAFORMA`, `HOST_SITE` ou `HOST_DESCONHECIDO`.
+- **Barreira de Isolamento Absoluto**: Bloqueia imediatamente requisições a rotas administrativas (`/painel/`, `/admin/`, `/health/`) originadas de domínios de clientes, retornando `HTTP 404`.
+- **Entrega Multi-Site na Raiz (`/`)**: O BioSite é servido diretamente na raiz quando acessado pelo host do cliente, sem necessidade de caminhos extras.
+- **Redirecionamento de Aliases (301)**: Quando um site possui múltiplos domínios (ex: subdomínio antigo da plataforma e novo domínio customizado), acessos ao alias secundário são redirecionados automaticamente via `301 Permanent Redirect` para o endereço principal.
+- **Compatibilidade Retroativa**: A rota legada `/b/<slug>/` permanece plenamente funcional na plataforma.
+
+### 15.4 Verificação Criptográfica via DNS (`servicos_dns.py`)
+- Validação assíncrona/on-demand via registro DNS TXT (`_site-verification.<host>` com valor `biosite-verification=<token>`).
+- Utilização de `dnspython` com timeout estrito de 3 segundos para proteger o ciclo de requisição.
+- Tratamento resiliente de `NXDOMAIN`, `NoAnswer` e `Timeout`.
+
+### 15.5 Auditoria de Domínios
+Para auditar a integridade de todos os domínios, duplicidades e múltiplos principais:
+```bash
+python manage.py verificar_dominios
+```
+
+---
+
+## 16. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -550,14 +589,14 @@ Para formatar automaticamente o código:
 ruff format .
 ```
 
-Para executar a suíte completa de testes automatizados (199 testes):
+Para executar a suíte completa de testes automatizados (227 testes):
 ```bash
 python manage.py test --settings=configuracao.settings.teste
 ```
 
 ---
 
-## 16. Próximas Etapas (Prompts 9 a 12)
+## 17. Próximas Etapas (Prompts 10 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
@@ -567,10 +606,11 @@ python manage.py test --settings=configuracao.settings.teste
 6. **Prompt 6:** Design System, Propriedades Visuais Avançadas e Componentes Premium *(Concluído)*
 7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas *(Concluído)*
 8. **Prompt 8:** Rascunho, Preview Final, Versionamento, Publicação e Hospedagem *(Concluído — 199 testes)*
-9. **Prompt 9:** Integração e Redirecionamento NFC, Subdomínios e Domínios Personalizados
-10. **Prompt 10:** QR Code Dinâmico e Exportação
+9. **Prompt 9:** Subdomínios, Domínios Personalizados e Resolução Segura de Host *(Concluído — 227 testes)*
+10. **Prompt 10:** Integração NFC, Tags Físicas, QR Code Dinâmico e Analytics
 11. **Prompt 11:** Hardening, Performance e Telemetria
 12. **Prompt 12:** Auditoria e Entrega Final
+
 
 
 

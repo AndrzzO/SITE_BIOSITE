@@ -36,18 +36,43 @@ class PublicSiteView(View):
     Renderiza a versão estável publicada de um BioSite para o público (/b/<slug>/).
     """
 
-    def head(self, request: HttpRequest, slug: str, pagina_slug: str | None = None) -> HttpResponse:
-        response = self.get(request, slug=slug, pagina_slug=pagina_slug)
+    def head(
+        self,
+        request: HttpRequest,
+        slug: str | None = None,
+        pagina_slug: str | None = None,
+        projeto_resolvido: ProjetoSite | None = None,
+        publicacao_resolvida: Any | None = None,
+    ) -> HttpResponse:
+        response = self.get(
+            request,
+            slug=slug,
+            pagina_slug=pagina_slug,
+            projeto_resolvido=projeto_resolvido,
+            publicacao_resolvida=publicacao_resolvida,
+        )
         response.content = b""
         return response
 
-    def get(self, request: HttpRequest, slug: str, pagina_slug: str | None = None) -> HttpResponse:
+    def get(
+        self,
+        request: HttpRequest,
+        slug: str | None = None,
+        pagina_slug: str | None = None,
+        projeto_resolvido: ProjetoSite | None = None,
+        publicacao_resolvida: Any | None = None,
+    ) -> HttpResponse:
         # 1. Resolução do Projeto e Publicação Ativa
-        projeto = (
-            ProjetoSite.objects.filter(slug=slug)
-            .select_related("publicacao_ativa", "imagem_compartilhamento")
-            .first()
-        )
+        if projeto_resolvido is not None:
+            projeto = projeto_resolvido
+        else:
+            if not slug:
+                raise Http404("BioSite não encontrado.")
+            projeto = (
+                ProjetoSite.objects.filter(slug=slug)
+                .select_related("publicacao_ativa", "imagem_compartilhamento")
+                .first()
+            )
 
         if (
             not projeto
@@ -57,7 +82,7 @@ class PublicSiteView(View):
             # Não expõe rascunhos ou projetos inexistentes
             raise Http404("BioSite não encontrado ou ainda não publicado.")
 
-        publicacao = projeto.publicacao_ativa
+        publicacao = publicacao_resolvida or projeto.publicacao_ativa
         etag_val = f'"{publicacao.hash_conteudo}"'
 
         # 2. Conditional GET (304 Not Modified)
@@ -81,15 +106,22 @@ class PublicSiteView(View):
         renderer = RenderizadorBioSite(modo="publico")
         html_conteudo = renderer.renderizar_snapshot(publicacao.snapshot, pagina_slug=pagina_slug)
 
-        # 5. Metadados de SEO e Open Graph
+        # 5. Metadados de SEO e Open Graph seguros (independente de Host arbitrário)
+        from .servicos_dominios import obter_public_scheme, obter_url_publica_projeto
+
+        caminho_sub = f"/{pagina_slug}" if pagina_slug else "/"
+        canonical_url = obter_url_publica_projeto(projeto, caminho=caminho_sub)
+
         imagem_og = ""
         if projeto.imagem_compartilhamento and projeto.imagem_compartilhamento.arquivo:
-            try:
-                imagem_og = request.build_absolute_uri(projeto.imagem_compartilhamento.arquivo.url)
-            except Exception:
-                imagem_og = projeto.imagem_compartilhamento.arquivo.url
-
-        canonical_url = request.build_absolute_uri(request.path)
+            arquivo_url = projeto.imagem_compartilhamento.arquivo.url
+            if arquivo_url.startswith("http"):
+                imagem_og = arquivo_url
+            else:
+                scheme = obter_public_scheme()
+                end_principal = projeto.obter_endereco_principal()
+                host_og = end_principal.host if end_principal else "localhost"
+                imagem_og = f"{scheme}://{host_og}{arquivo_url}"
 
         contexto: dict[str, Any] = {
             "projeto": projeto,

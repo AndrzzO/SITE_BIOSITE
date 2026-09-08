@@ -46,6 +46,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # Middlewares oficiais e seguros
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "aplicativos.sites.middleware.HostRoutingMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -159,3 +160,13 @@ LOGGING = {
         },
     },
 }
+
+# Configurações de Domínios, Subdomínios e Resolução de Host (Prompt 9)
+PUBLIC_BASE_DOMAIN = env("PUBLIC_BASE_DOMAIN", default="localhost")
+PUBLIC_SCHEME = env("PUBLIC_SCHEME", default="http")
+CUSTOM_DOMAIN_CNAME_TARGET = env("CUSTOM_DOMAIN_CNAME_TARGET", default="sites.seudominio.com")
+RESERVED_SUBDOMAINS = env.list("RESERVED_SUBDOMAINS", default=[])
+PLATFORM_HOSTS = env.list(
+    "PLATFORM_HOSTS",
+    default=["localhost", "127.0.0.1", "[::1]", "testserver"],
+)
