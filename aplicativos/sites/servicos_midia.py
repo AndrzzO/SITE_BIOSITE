@@ -15,6 +15,9 @@ from .models import MidiaSite, ProjetoSite
 
 MAX_TAMANHO_BYTES = 10 * 1024 * 1024  # 10 MB
 MAX_DIMENSAO_PX = 5000  # Máximo de 5000x5000px
+Image.MAX_IMAGE_PIXELS = (
+    25_000_000  # Prevenção explícita de descompressão abusiva (Decompression Bomb)
+)
 LARGURA_MAXIMA_MOBILE = 1200  # Redimensionamento suave para telas mobile
 
 EXTENSOES_PERMITIDAS = frozenset({".jpg", ".jpeg", ".png", ".webp"})

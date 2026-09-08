@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 )
             )
         else:
-            self.stdout.write(self.style.SUCCESS("✓ Unicidade de hosts: 100% íntegra."))
+            self.stdout.write(self.style.SUCCESS("[OK] Unicidade de hosts: 100% íntegra."))
 
         # 2. Checagem de Múltiplos Principais por Projeto
         projetos = ProjetoSite.objects.prefetch_related("enderecos").all()
@@ -115,10 +115,10 @@ class Command(BaseCommand):
         self.stdout.write("\n--- Resumo da Auditoria ---")
         self.stdout.write(f"Total de Endereços Auditados: {total_enderecos}")
         self.stdout.write(
-            f"  • Subdomínios da plataforma: {EnderecoSite.objects.filter(tipo=EnderecoSite.Tipo.SUBDOMINIO_PLATAFORMA).count()}"
+            f"  - Subdomínios da plataforma: {EnderecoSite.objects.filter(tipo=EnderecoSite.Tipo.SUBDOMINIO_PLATAFORMA).count()}"
         )
         self.stdout.write(
-            f"  • Domínios personalizados: {EnderecoSite.objects.filter(tipo=EnderecoSite.Tipo.DOMINIO_PERSONALIZADO).count()}"
+            f"  - Domínios personalizados: {EnderecoSite.objects.filter(tipo=EnderecoSite.Tipo.DOMINIO_PERSONALIZADO).count()}"
         )
         self.stdout.write(
             f"    - Ativos: {EnderecoSite.objects.filter(status=EnderecoSite.Status.ATIVO, tipo=EnderecoSite.Tipo.DOMINIO_PERSONALIZADO).count()}"

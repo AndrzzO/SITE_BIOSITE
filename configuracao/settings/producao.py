@@ -28,12 +28,15 @@ ALLOWED_HOSTS = DynamicAllowedHosts(_raw_allowed_hosts)
 # Origens confiáveis para proteção CSRF
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# Banco de dados de produção (PostgreSQL obrigatório via DATABASE_URL)
+# Banco de dados de produção (PostgreSQL recomendado ou SQLite em volume persistente)
 if "DATABASE_URL" not in env:
     raise ImproperlyConfigured(
         "A variável de ambiente DATABASE_URL deve ser definida para o banco de produção."
     )
-DATABASES = {"default": env.db("DATABASE_URL")}
+_db_prod = env.db("DATABASE_URL")
+if _db_prod.get("ENGINE") == "django.db.backends.sqlite3":
+    _db_prod.setdefault("OPTIONS", {})["timeout"] = 25
+DATABASES = {"default": _db_prod}
 
 # Cabeçalhos e Redirecionamentos de Segurança HTTP
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
@@ -48,7 +51,7 @@ SECURE_REFERRER_POLICY = "same-origin"
 # HSTS (HTTP Strict Transport Security)
 SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS", default=31536000)  # 1 ano
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True)
-SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)
+SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=True)
 
 # Configuração de Storages para produção (cache busting de arquivos estáticos)
 STORAGES = {

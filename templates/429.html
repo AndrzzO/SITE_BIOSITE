@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muitas Requisições (429) — BioSite NFC</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #151d30;
+            border: 1px solid #26334d;
+            padding: 3rem 2.5rem;
+            border-radius: 14px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        h1 { color: #f59e0b; font-size: 3rem; margin-bottom: 0.5rem; font-weight: 800; }
+        h2 { font-size: 1.375rem; margin-bottom: 0.75rem; color: #f8fafc; }
+        p { color: #94a3b8; margin-bottom: 2rem; font-size: 0.9375rem; line-height: 1.6; }
+        .btn-group { display: flex; gap: 1rem; justify-content: center; }
+        a.btn {
+            background-color: #38bdf8;
+            color: #0b0f19;
+            font-weight: 600;
+            padding: 0.625rem 1.25rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9375rem;
+        }
+        a.btn-sec {
+            background-color: transparent;
+            border: 1px solid #26334d;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>429</h1>
+        <h2>Limite de Requisições Excedido</h2>
+        <p>Detectamos uma taxa elevada de solicitações a partir do seu endereço de rede. Por favor, aguarde alguns instantes antes de tentar novamente.</p>
+        <div class="btn-group">
+            <a href="/" class="btn">Página Inicial</a>
+            <a href="javascript:location.reload()" class="btn btn-sec">Tentar Novamente</a>
+        </div>
+    </div>
+</body>
+</html>

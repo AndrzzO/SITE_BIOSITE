@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 )
             )
         else:
-            self.stdout.write(self.style.SUCCESS("✓ Unicidade de tokens: 100% íntegra."))
+            self.stdout.write(self.style.SUCCESS("[OK] Unicidade de tokens: 100% íntegra."))
 
         # 2. Validação estrutural de cada Link
         tipos_validos = set(LinkInteligente.Tipo.values)
@@ -126,16 +126,16 @@ class Command(BaseCommand):
         self.stdout.write("\n--- Resumo da Auditoria de Links Inteligentes ---")
         self.stdout.write(f"Total de Links Auditados: {total_links}")
         self.stdout.write(
-            f"  • Tags NFC: {LinkInteligente.objects.filter(tipo=LinkInteligente.Tipo.NFC).count()}"
+            f"  - Tags NFC: {LinkInteligente.objects.filter(tipo=LinkInteligente.Tipo.NFC).count()}"
         )
         self.stdout.write(
-            f"  • QR Codes: {LinkInteligente.objects.filter(tipo=LinkInteligente.Tipo.QR).count()}"
+            f"  - QR Codes: {LinkInteligente.objects.filter(tipo=LinkInteligente.Tipo.QR).count()}"
         )
         self.stdout.write(
-            f"  • Ativos: {LinkInteligente.objects.filter(status=LinkInteligente.Status.ATIVO).count()}"
+            f"  - Ativos: {LinkInteligente.objects.filter(status=LinkInteligente.Status.ATIVO).count()}"
         )
         self.stdout.write(
-            f"  • Inativos: {LinkInteligente.objects.filter(status=LinkInteligente.Status.INATIVO).count()}"
+            f"  - Inativos: {LinkInteligente.objects.filter(status=LinkInteligente.Status.INATIVO).count()}"
         )
         self.stdout.write(f"Histórico de Vínculos Auditados: {total_historico}")
 

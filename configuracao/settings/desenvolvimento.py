@@ -15,12 +15,14 @@ ALLOWED_HOSTS = DynamicAllowedHosts(
 
 # Banco de dados local padrão: SQLite com facilidade de uso
 # Suporta transição imediata para PostgreSQL via DATABASE_URL se configurada
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-    )
-}
+_db_config = env.db(
+    "DATABASE_URL",
+    default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+)
+if _db_config.get("ENGINE") == "django.db.backends.sqlite3":
+    _db_config.setdefault("OPTIONS", {})["timeout"] = 20
+
+DATABASES = {"default": _db_config}
 
 # Nível de logging em desenvolvimento
 LOGGING["loggers"]["aplicativos"]["level"] = "DEBUG"

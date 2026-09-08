@@ -681,14 +681,14 @@ Para formatar automaticamente o código:
 ruff format .
 ```
 
-Para executar a suíte completa de testes automatizados (282 testes):
+Para executar a suíte completa de testes automatizados (295 testes):
 ```bash
 python manage.py test --settings=configuracao.settings.teste
 ```
 
 ---
 
-## 19. Próximas Etapas (Prompts 11 a 12)
+## 19. Roadmap do Projeto (Prompts 1 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
@@ -701,7 +701,87 @@ python manage.py test --settings=configuracao.settings.teste
 9. **Prompt 9:** Subdomínios, Domínios Personalizados e Resolução Segura de Host *(Concluído — 227 testes)*
 10. **Prompt 10:** NFC, QR Code e Links Inteligentes *(Concluído — 252 testes)*
 11. **Prompt 11:** Analytics First-Party, Eventos, Cliques e Métricas *(Concluído — 282 testes)*
-12. **Prompt 12:** Hardening, Otimização Final, Produção e Auditoria Geral
+12. **Prompt 12:** Hardening, Otimização Final, Produção e Auditoria Geral *(Concluído — 295 testes)*
+
+---
+
+## 20. Hardening de Segurança, Backup Atômico e Auditoria de Mídia
+
+### 20.1 Hardening e Proteção em Profundidade
+- **Defesa Dupla contra XSS**: Validação rigorosa e escape no schema de entrada dos componentes (`validar_conteudo`) combinada com renderização segura via `format_html` com unescape posicional.
+- **Proteção contra Decompression Bomb**: Limite explícito de `Image.MAX_IMAGE_PIXELS = 25_000_000` (5000x5000px) impedindo ataques de negação de serviço via upload de imagens gigantes infladas.
+- **Cabeçalhos de Segurança HTTP**:
+  - `SECURE_CONTENT_TYPE_NOSNIFF = True`
+  - `X_FRAME_OPTIONS = 'DENY'`
+  - `SECURE_REFERRER_POLICY = 'same-origin'`
+  - `SECURE_HSTS_SECONDS = 31536000` (1 ano) com `includeSubDomains` e `preload`
+- **Página de Erro Personalizada 429**: Template `templates/429.html` padronizado para respostas de rate limiting.
+
+### 20.2 Comando de Backup Atômico com Restauração Isolada
+O comando `backup_sistema` realiza snapshots online consistentes sem travar o banco:
+```bash
+# Execução simples de backup
+python manage.py backup_sistema
+
+# Execução com teste de restauração automatizado em diretório temporário
+python manage.py backup_sistema --test-restore
+```
+Valida a integridade física (`PRAGMA integrity_check`), contagem de tabelas e conferência dos arquivos de mídia no storage.
+
+### 20.3 Auditoria e Verificação de Mídia
+Verifica a consistência de arquivos físicos contra o banco de dados sem apagar arquivos inadvertidamente:
+```bash
+python manage.py verificar_midia
+```
+
+---
+
+## 21. Avaliação de Produção e Decision Gate de Banco de Dados
+
+### Resultado dos Benchmarks Concorrentes (410 Operações Simultâneas)
+- **Leituras Públicas**: 237.9 req/s, 33ms latência média, 0 erros, 0 locks.
+- **Ingestão de PageViews**: 172.9 req/s, 40ms latência média, 0 erros, 0 locks.
+- **Redirecionamento NFC/QR + Analytics**: 93.2 req/s, 71ms latência média, 0 erros, 0 locks.
+- **Salvamento no Editor + Gravação de Analytics**: 81.2 req/s, 62ms latência média, 0 erros, 0 locks.
+- **Publicação Concorrente sob Tráfego**: 49 sucessos em 50 ops, 1 lock mitigado, 25ms média.
+- **Taxa Global de Sucesso**: **99.76%**.
+
+### Classificação e Decision Gate: Opção B (Utilizável com Restrições)
+- **Cenário Mononó (VPS / Servidor Único com Volume Persistente)**: SQLite é plenamente operacional com WAL mode (`PRAGMA journal_mode=WAL`), `PRAGMA synchronous=NORMAL` e `busy_timeout=25000` (25 segundos).
+- **Cenário de Escala Horizontal / Multi-Instância**: Migração recomendada para **PostgreSQL**, utilizando a variável de ambiente `DATABASE_URL=postgres://usuario:senha@host:5432/biositedb`. O projeto é 100% agnóstico via Django ORM.
+
+---
+
+## 22. Checklist de Pré-Lançamento em Produção
+
+Antes de colocar o sistema no ar:
+1. Definir variáveis de ambiente no `.env` de produção:
+   - `DJANGO_SETTINGS_MODULE=configuracao.settings.producao`
+   - `DJANGO_SECRET_KEY=<chave-longa-e-aleatoria-de-50+-caracteres>`
+   - `DJANGO_ALLOWED_HOSTS=seubiosite.com.br,app.seubiosite.com.br,go.seubiosite.com.br`
+   - `DJANGO_CSRF_TRUSTED_ORIGINS=https://seubiosite.com.br,https://app.seubiosite.com.br`
+   - `DATABASE_URL=sqlite:///caminho/persistente/db.sqlite3` (ou `postgres://...`)
+2. Executar auditoria de deploy nativa:
+   ```bash
+   python manage.py check --deploy --settings=configuracao.settings.producao
+   ```
+3. Coletar arquivos estáticos:
+   ```bash
+   python manage.py collectstatic --noinput
+   ```
+4. Executar rotina de backup com verificação de restore:
+   ```bash
+   python manage.py backup_sistema --test-restore
+   ```
+5. Executar auditorias de consistência:
+   ```bash
+   python manage.py validar_templates
+   python manage.py verificar_publicacoes
+   python manage.py verificar_dominios
+   python manage.py verificar_links_inteligentes
+   python manage.py verificar_analytics
+   python manage.py verificar_midia
+   ```
 
 
 

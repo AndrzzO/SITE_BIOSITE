@@ -1,5 +1,4 @@
-"""Definições completas e extensíveis de tipos de elementos para BioSites Premium (Prompt 6)."""
-
+import html
 import re
 from typing import Any
 from urllib.parse import quote, urlparse
@@ -58,10 +57,11 @@ class ElementoTitulo(DefinicaoElemento):
         if not isinstance(texto, str) or not texto.strip():
             raise ValidationError(_("O campo 'texto' do Título é obrigatório."))
 
-        conteudo["texto"] = escape(texto.strip())
-
-        if len(conteudo["texto"]) > 300:
+        texto_limpo = escape(texto.strip())
+        if len(texto_limpo) > 300:
             raise ValidationError(_("O Título não pode exceder 300 caracteres."))
+
+        conteudo["texto"] = texto_limpo
 
         nivel = conteudo.get("nivel", "h2")
         if nivel not in self.NIVEIS_PERMITIDOS:
@@ -72,10 +72,8 @@ class ElementoTitulo(DefinicaoElemento):
     def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
         conteudo = elemento.conteudo or self.conteudo_padrao()
         nivel = conteudo.get("nivel", "h2")
-        texto = conteudo.get("texto", "")
-        return format_html(
-            '<{0} class="elemento-titulo biosite-heading">{1}</{0}>', nivel, mark_safe(texto)
-        )
+        texto = html.unescape(str(conteudo.get("texto", "")))
+        return format_html('<{0} class="elemento-titulo biosite-heading">{1}</{0}>', nivel, texto)
 
 
 @registro_elementos.registrar
@@ -112,8 +110,8 @@ class ElementoTexto(DefinicaoElemento):
 
     def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
         conteudo = elemento.conteudo or self.conteudo_padrao()
-        texto = conteudo.get("texto", "")
-        return format_html('<p class="elemento-texto biosite-body">{}</p>', mark_safe(texto))
+        texto = html.unescape(str(conteudo.get("texto", "")))
+        return format_html('<p class="elemento-texto biosite-body">{}</p>', texto)
 
 
 @registro_elementos.registrar
@@ -419,7 +417,7 @@ class ElementoWhatsApp(DefinicaoElemento):
 
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
         return format_html(
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-whatsapp {}{}">{}<span>{}</span></a>',
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-whatsapp {}"{}>{}<span>{}</span></a>',
             url,
             largura_total,
             mark_safe(token_attr),
@@ -474,7 +472,7 @@ class ElementoTelefone(DefinicaoElemento):
         token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="tel:{}" class="elemento-botao biosite-btn btn-telefone {}{}">{}<span>{}</span></a>',
+            '<a href="tel:{}" class="elemento-botao biosite-btn btn-telefone {}"{}>{}<span>{}</span></a>',
             clean_tel,
             largura_total,
             mark_safe(token_attr),
@@ -535,7 +533,7 @@ class ElementoEmail(DefinicaoElemento):
         token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" class="elemento-botao biosite-btn btn-email {}{}>{}<span>{}</span></a>',
+            '<a href="{}" class="elemento-botao biosite-btn btn-email {}"{}>{}<span>{}</span></a>',
             url,
             largura_total,
             mark_safe(token_attr),
@@ -589,7 +587,7 @@ class ElementoWebsite(DefinicaoElemento):
         token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-website {}{}">{}<span>{}</span></a>',
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-website {}"{}>{}<span>{}</span></a>',
             url,
             largura_total,
             mark_safe(token_attr),
@@ -739,7 +737,7 @@ class ElementoAgendamentoExterno(DefinicaoElemento):
         token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-agendamento {}{}>'
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-agendamento {}"{}>'
             "{}<span>{}</span>"
             "</a>",
             url,
@@ -804,7 +802,7 @@ class ElementoMapa(DefinicaoElemento):
 
         return format_html(
             '<div class="elemento-mapa-wrapper">'
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-mapa {}{}>'
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-mapa {}"{}>'
             "{}<span>{}</span>"
             "</a>"
             "</div>",

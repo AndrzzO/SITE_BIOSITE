@@ -27,9 +27,11 @@ media/*
 # Arquivos estáticos coletados
 staticfiles/
 
-# Logs
+# Logs e Backups
 *.log
 logs/
+backups/
+*.zip
 
 # Testes e cobertura
 .coverage
