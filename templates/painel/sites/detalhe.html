@@ -28,8 +28,16 @@
     </div>
 
     <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-        <a href="{% url 'painel:site_estrutura' site.uuid %}" class="btn btn-primary">
-            ⚙️ Gerenciar Estrutura
+        <a href="{% url 'painel:site_editor' site.uuid %}" class="btn btn-primary">
+            🎨 Abrir Editor Visual
+        </a>
+
+        <a href="{% url 'painel:site_preview' site.uuid %}" target="_blank" class="btn btn-secondary">
+            👁️ Ver Preview
+        </a>
+
+        <a href="{% url 'painel:site_estrutura' site.uuid %}" class="btn btn-secondary">
+            ⚙️ Estrutura
         </a>
 
         <a href="{% url 'painel:site_editar' site.uuid %}" class="btn btn-secondary">
@@ -62,22 +70,28 @@
 </div>
 
 <div class="detail-grid">
-    <!-- Coluna Esquerda: Acesso ao Motor Estrutural e Futuro Editor Visual -->
+    <!-- Coluna Esquerda: Acesso ao Editor Visual e Motor Estrutural -->
     <div>
         <div class="detail-card" style="text-align: center; padding: 3rem 2rem; background: linear-gradient(180deg, #151d30 0%, #0b0f19 100%);">
             <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(56, 189, 248, 0.1); color: var(--painel-accent); font-size: 1.75rem; margin-bottom: 1.25rem;">
                 🎨
             </div>
             <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--painel-text);">
-                Motor Estrutural & Hierarquia
+                Editor Visual Mobile-First
             </h2>
             <p style="color: var(--painel-text-muted); font-size: 0.9375rem; max-width: 500px; margin: 0 auto 1.5rem; line-height: 1.6;">
-                Gerencie páginas, seções, containers e elementos relacionais com validação estrita mobile-first. O canvas de edição visual interativo estilo Canva/Google Sites será integrado no Prompt 5.
+                Edição visual ágil e fluida estilo Google Sites + Canva. Arraste e solte seções e blocos, edite textos com duplo clique, ajuste estilos no painel lateral e acompanhe tudo em tempo real em 390px.
             </p>
 
             <div style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
-                <a href="{% url 'painel:site_estrutura' site.uuid %}" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
-                    ⚙️ Abrir Árvore Estrutural
+                <a href="{% url 'painel:site_editor' site.uuid %}" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+                    🎨 Abrir Editor Visual
+                </a>
+                <a href="{% url 'painel:site_preview' site.uuid %}" target="_blank" class="btn btn-secondary" style="padding: 0.65rem 1.25rem;">
+                    👁️ Ver Preview Fiel
+                </a>
+                <a href="{% url 'painel:site_estrutura' site.uuid %}" class="btn btn-secondary">
+                    ⚙️ Árvore Estrutural
                 </a>
                 <a href="{% url 'painel:site_estrutura_json' site.uuid %}" target="_blank" class="btn btn-secondary" style="font-family: monospace; font-size: 0.8125rem;">
                     { } Ver JSON

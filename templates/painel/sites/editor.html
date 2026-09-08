@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{{ titulo_pagina }} — Estúdio BioSite</title>
+    <link rel="stylesheet" href="{% static 'editor/css/editor.css' %}">
+</head>
+<body class="editor-active">
+
+<div id="editor-studio-app">
+    <!-- Topbar do Estúdio -->
+    <header class="studio-topbar">
+        <div class="studio-topbar-left">
+            <a href="{% url 'painel:site_detalhe' site.uuid %}" class="btn-voltar">
+                &larr; Detalhes
+            </a>
+            <span style="color: var(--studio-border);">|</span>
+            <div class="studio-projeto-titulo" title="{{ site.nome }}">{{ site.nome }}</div>
+        </div>
+
+        <div class="studio-topbar-center">
+            <div id="autosave-indicador" class="autosave-status salvo">
+                <span class="autosave-dot"></span>
+                <span class="autosave-texto">✓ Salvo</span>
+            </div>
+        </div>
+
+        <div class="studio-topbar-right">
+            <a href="{% url 'painel:site_preview' site.uuid %}?pagina={{ pagina_atual.id }}" target="_blank" class="btn-preview" title="Abrir visualização fiel em nova aba">
+                ↗ Preview
+            </a>
+            <button type="button" class="btn-publicar-disabled" title="Publicação e snapshot imutável serão ativados em etapa futura" disabled>
+                Publicar
+            </button>
+        </div>
+    </header>
+
+    <!-- Corpo do Estúdio -->
+    <div class="studio-body">
+        <!-- Sidebar Esquerda (Elementos, Páginas, Estrutura) -->
+        <aside class="studio-sidebar-left">
+            <div class="sidebar-tabs">
+                <button type="button" class="sidebar-tab active" data-tab="tab-elementos">ELEMENTOS</button>
+                <button type="button" class="sidebar-tab" data-tab="tab-paginas">PÁGINAS</button>
+                <button type="button" class="sidebar-tab" data-tab="tab-estrutura">ESTRUTURA</button>
+            </div>
+
+            <!-- Tab: Elementos -->
+            <div class="sidebar-tab-content active" id="tab-elementos">
+                <div class="paleta-secao-titulo">Elementos Básicos</div>
+                <div class="paleta-grid">
+                    {% for elem in tipos_elementos %}
+                        <div class="paleta-item" data-tipo="{{ elem.identificador|upper }}" title="Clique ou arraste para inserir">
+                            <span class="paleta-item-icone">{{ elem.icone }}</span>
+                            <span class="paleta-item-nome">{{ elem.nome }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Tab: Páginas -->
+            <div class="sidebar-tab-content" id="tab-paginas">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <span class="paleta-secao-titulo" style="margin-bottom: 0;">Páginas do Site</span>
+                    <button type="button" class="btn-acao-elem" id="btn-nova-pagina" style="color: var(--studio-accent); font-weight: 700;">+ Nova</button>
+                </div>
+                <div class="paginas-lista" id="paginas-lista">
+                    {% for pag in paginas %}
+                        <div class="pagina-item {% if pag.id == pagina_atual.id %}active{% endif %}" data-pagina-id="{{ pag.id }}">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span>📄 {{ pag.titulo }}</span>
+                                {% if pag.eh_inicial %}
+                                    <span style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.2); color: var(--studio-accent); padding: 0.1rem 0.35rem; border-radius: 4px;">HOME</span>
+                                {% endif %}
+                            </div>
+                            <span style="font-size: 0.75rem; color: var(--studio-text-muted);">/{{ pag.slug }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Tab: Estrutura -->
+            <div class="sidebar-tab-content" id="tab-estrutura">
+                <div class="paleta-secao-titulo">Árvore da Página</div>
+                <div class="estrutura-arvore" id="estrutura-arvore">
+                    {% for secao in pagina_atual.secoes.all %}
+                        <div class="arvore-item" data-tipo="secao" data-id="{{ secao.id }}">
+                            <span>📦 {{ secao.nome_interno }}</span>
+                        </div>
+                    {% empty %}
+                        <div style="color: var(--studio-text-muted); font-size: 0.8125rem;">Nenhuma seção criada.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
+
+        <!-- Canvas Central (Área Smartphone-First) -->
+        <main class="studio-canvas-area">
+            <div class="studio-canvas-viewport" id="studio-canvas-viewport">
+                <div class="phone-mockup-wrapper" id="phone-mockup-wrapper">
+                    <div class="phone-speaker-bar"></div>
+                    <!-- Conteúdo Renderizado da Página -->
+                    {{ html_canvas }}
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar Direita (Propriedades Contextuais) -->
+        <aside class="studio-sidebar-right" id="studio-sidebar-right">
+            <div id="propriedades-conteudo">
+                <div class="propriedades-vazio">
+                    <p>Selecione um elemento, seção ou container no canvas para editar suas propriedades.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Barra Inferior (Viewports e Controles) -->
+    <footer class="studio-bottombar">
+        <div class="bottombar-viewports">
+            <span style="font-size: 0.75rem; color: var(--studio-text-muted); margin-right: 0.25rem;">Viewport:</span>
+            <button type="button" class="btn-viewport" data-viewport="320">320px</button>
+            <button type="button" class="btn-viewport" data-viewport="360">360px</button>
+            <button type="button" class="btn-viewport" data-viewport="375">375px</button>
+            <button type="button" class="btn-viewport active" data-viewport="390">390px (Padrão)</button>
+            <button type="button" class="btn-viewport" data-viewport="412">412px</button>
+            <button type="button" class="btn-viewport" data-viewport="430">430px</button>
+            <button type="button" class="btn-viewport" data-viewport="desktop">Desktop</button>
+        </div>
+
+        <div class="bottombar-controles">
+            <button type="button" class="btn-controle" id="btn-toggle-frame" title="Alternar Moldura de Smartphone">
+                📱 Moldura
+            </button>
+
+            <span style="color: var(--studio-border);">|</span>
+
+            <button type="button" class="btn-controle" id="btn-zoom-out" title="Diminuir Zoom">−</button>
+            <span id="zoom-indicador" style="font-size: 0.75rem; font-weight: 600; min-width: 40px; text-align: center;">100%</span>
+            <button type="button" class="btn-controle" id="btn-zoom-in" title="Aumentar Zoom">+</button>
+            <button type="button" class="btn-controle" id="btn-zoom-reset" title="Resetar Zoom" style="font-size: 0.7rem;">Reset</button>
+
+            <span style="color: var(--studio-border);">|</span>
+
+            <button type="button" class="btn-controle" id="btn-desfazer" title="Desfazer (Ctrl+Z)" disabled>↶</button>
+            <button type="button" class="btn-controle" id="btn-refazer" title="Refazer (Ctrl+Y)" disabled>↷</button>
+        </div>
+    </footer>
+</div>
+
+<!-- Scripts do Estúdio -->
+<script src="{% static 'editor/js/vendor/sortable.min.js' %}"></script>
+<script type="module">
+    import { BioSiteEditorStudio } from "{% static 'editor/js/editor.js' %}";
+
+    window.editorStudio = new BioSiteEditorStudio({
+        siteUuid: "{{ site.uuid }}",
+        paginaId: {{ pagina_atual.id }}
+    });
+</script>
+
+</body>
+</html>

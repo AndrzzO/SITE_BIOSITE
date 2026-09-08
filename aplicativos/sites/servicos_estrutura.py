@@ -422,3 +422,93 @@ def auditar_integridade_projeto(projeto: ProjetoSite) -> list[str]:
             anomalias.append(f"Erro no container #{container.id}: {e.message}")
 
     return anomalias
+
+
+def mover_elemento(
+    elemento: ElementoSite,
+    novo_container: ContainerSite,
+    nova_ordem: int | None = None,
+) -> ElementoSite:
+    """
+    Move um elemento para outro container (ou altera sua ordem no container atual).
+
+    Valida que o container de destino pertence ao mesmo projeto.
+    """
+    with transaction.atomic():
+        projeto_origem = elemento.container.secao.pagina.projeto_id
+        projeto_destino = novo_container.secao.pagina.projeto_id
+
+        if projeto_origem != projeto_destino:
+            raise ValidationError(
+                _("Não é permitido mover elementos entre projetos diferentes."),
+                code="cross_project_move",
+            )
+
+        elemento.container = novo_container
+        if nova_ordem is not None:
+            elemento.ordem = nova_ordem
+        else:
+            maior_ordem = (
+                novo_container.elementos.exclude(id=elemento.id).aggregate(max_ordem=Max("ordem"))[
+                    "max_ordem"
+                ]
+                or 0
+            )
+            elemento.ordem = maior_ordem + 10
+
+        elemento.save(update_fields=["container", "ordem", "atualizado_em"])
+        return elemento
+
+
+def atualizar_conteudo_e_estilos_elemento(
+    elemento: ElementoSite,
+    conteudo: dict[str, Any] | None = None,
+    estilos: dict[str, Any] | None = None,
+) -> ElementoSite:
+    """
+    Atualiza de forma atômica e segura o payload de conteúdo e/ou estilos do elemento.
+
+    Executa full_clean() para aplicar sanitizações de schema e allowlist mobile-first.
+    """
+    with transaction.atomic():
+        if conteudo is not None:
+            novo_conteudo = copy.deepcopy(elemento.conteudo)
+            novo_conteudo.update(conteudo)
+            elemento.conteudo = novo_conteudo
+
+        if estilos is not None:
+            novos_estilos = copy.deepcopy(elemento.estilos)
+            # Atualiza mantendo hierarquia base/desktop
+            for escopo in ["base", "desktop"]:
+                if escopo in estilos and isinstance(estilos[escopo], dict):
+                    if escopo not in novos_estilos:
+                        novos_estilos[escopo] = {}
+                    novos_estilos[escopo].update(estilos[escopo])
+            elemento.estilos = novos_estilos
+
+        elemento.full_clean()
+        elemento.save()
+        return elemento
+
+
+def atualizar_propriedades_secao(
+    secao: SecaoSite,
+    nome_interno: str | None = None,
+    tipo: str | None = None,
+    configuracao: dict[str, Any] | None = None,
+    estilos: dict[str, Any] | None = None,
+) -> SecaoSite:
+    """Atualiza propriedades cadastrais e visuais de uma seção."""
+    with transaction.atomic():
+        if nome_interno is not None:
+            secao.nome_interno = nome_interno.strip()
+        if tipo is not None and tipo in SecaoSite.Tipo.values:
+            secao.tipo = tipo
+        if configuracao is not None:
+            secao.configuracao.update(configuracao)
+        if estilos is not None:
+            secao.estilos.update(estilos)
+
+        secao.full_clean()
+        secao.save()
+        return secao

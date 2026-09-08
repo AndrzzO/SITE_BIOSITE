@@ -1,0 +1,840 @@
+/* ==========================================================================
+   ESTÚDIO DO EDITOR VISUAL MOBILE-FIRST (Prompt 5)
+   Design System, Viewports, Canvas Smartphone, Drag & Drop e Painéis
+   ========================================================================== */
+
+:root {
+    --studio-bg: #0b0f19;
+    --studio-surface: #111827;
+    --studio-surface-alt: #1f2937;
+    --studio-border: #374151;
+    --studio-text: #f9fafb;
+    --studio-text-muted: #9ca3af;
+    --studio-accent: #38bdf8;
+    --studio-accent-hover: #0ea5e9;
+    --studio-danger: #ef4444;
+    --studio-success: #10b981;
+    --studio-warning: #f59e0b;
+    --studio-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.editor-active {
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--studio-bg);
+    color: var(--studio-text);
+    font-family: var(--studio-font);
+    user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   App Container & Topbar
+   -------------------------------------------------------------------------- */
+#editor-studio-app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+.studio-topbar {
+    height: 54px;
+    background: var(--studio-surface);
+    border-bottom: 1px solid var(--studio-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    z-index: 100;
+    flex-shrink: 0;
+}
+
+.studio-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-voltar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--studio-text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+
+.btn-voltar:hover {
+    color: var(--studio-text);
+    background: var(--studio-surface-alt);
+}
+
+.studio-projeto-titulo {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--studio-text);
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.studio-topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Indicador de Autosave */
+.autosave-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--studio-text-muted);
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    background: rgba(31, 41, 55, 0.6);
+    border: 1px solid var(--studio-border);
+}
+
+.autosave-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--studio-success);
+    transition: background-color 0.2s ease;
+}
+
+.autosave-status.salvando .autosave-dot {
+    background-color: var(--studio-warning);
+    animation: pulse 1s infinite;
+}
+
+.autosave-status.erro .autosave-dot {
+    background-color: var(--studio-danger);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.3); }
+}
+
+.studio-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.btn-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    color: var(--studio-text);
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-preview:hover {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.btn-publicar-disabled {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px dashed rgba(56, 189, 248, 0.4);
+    color: rgba(56, 189, 248, 0.7);
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Corpo Principal (Sidebar Esquerda + Canvas + Sidebar Direita)
+   -------------------------------------------------------------------------- */
+.studio-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Sidebar Esquerda */
+.studio-sidebar-left {
+    width: 290px;
+    background: var(--studio-surface);
+    border-right: 1px solid var(--studio-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 20;
+}
+
+.sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--studio-border);
+    background: #0d1322;
+}
+
+.sidebar-tab {
+    flex: 1;
+    padding: 0.75rem 0.25rem;
+    background: none;
+    border: none;
+    color: var(--studio-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+}
+
+.sidebar-tab:hover {
+    color: var(--studio-text);
+}
+
+.sidebar-tab.active {
+    color: var(--studio-accent);
+    border-bottom-color: var(--studio-accent);
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.sidebar-tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: none;
+}
+
+.sidebar-tab-content.active {
+    display: block;
+}
+
+/* Paleta de Elementos */
+.paleta-secao-titulo {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--studio-text-muted);
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+}
+
+.paleta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+}
+
+.paleta-item {
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    border-radius: 8px;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: grab;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.paleta-item:hover {
+    border-color: var(--studio-accent);
+    background: rgba(56, 189, 248, 0.08);
+    transform: translateY(-2px);
+}
+
+.paleta-item:active {
+    cursor: grabbing;
+}
+
+.paleta-item-icone {
+    font-size: 1.35rem;
+}
+
+.paleta-item-nome {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--studio-text);
+    text-align: center;
+}
+
+/* Árvore de Estrutura */
+.estrutura-arvore {
+    font-size: 0.8125rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.arvore-item {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--studio-text-muted);
+    transition: all 0.1s;
+}
+
+.arvore-item:hover {
+    background: var(--studio-surface-alt);
+    color: var(--studio-text);
+}
+
+.arvore-item.is-selected {
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--studio-accent);
+    font-weight: 600;
+}
+
+/* Lista de Páginas */
+.paginas-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pagina-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.pagina-item:hover {
+    border-color: #4b5563;
+}
+
+.pagina-item.active {
+    border-color: var(--studio-accent);
+    background: rgba(56, 189, 248, 0.1);
+}
+
+/* --------------------------------------------------------------------------
+   Canvas Central (Área de Trabalho Smartphone-First)
+   -------------------------------------------------------------------------- */
+.studio-canvas-area {
+    flex: 1;
+    overflow: auto;
+    background-color: #080c14;
+    background-image: radial-gradient(rgba(55, 65, 81, 0.25) 1px, transparent 1px);
+    background-size: 20px 20px;
+    display: flex;
+    justify-content: center;
+    padding: 2.5rem 1.5rem 4rem 1.5rem;
+    position: relative;
+}
+
+.studio-canvas-viewport {
+    width: 390px; /* Padrão Smartphone-First */
+    min-height: 844px;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: top center;
+    flex-shrink: 0;
+}
+
+/* Moldura de Smartphone */
+.phone-mockup-wrapper {
+    background: #000000;
+    border-radius: 44px;
+    border: 10px solid #1f2937;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    position: relative;
+    min-height: 800px;
+}
+
+.phone-speaker-bar {
+    width: 120px;
+    height: 18px;
+    background: #1f2937;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    margin: 0 auto;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+/* Modo Limpo (Sem Moldura) */
+.phone-mockup-wrapper.clean-mode {
+    border-radius: 0;
+    border: 1px solid var(--studio-border);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.phone-mockup-wrapper.clean-mode .phone-speaker-bar {
+    display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Renderer & Elementos do BioSite no Canvas
+   -------------------------------------------------------------------------- */
+.biosite-canvas-root {
+    background: #ffffff;
+    color: #111827;
+    min-height: 750px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    position: relative;
+}
+
+/* Seção */
+.editor-secao-wrapper {
+    position: relative;
+    border: 1px dashed transparent;
+    transition: border-color 0.15s;
+}
+
+.editor-secao-wrapper:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.editor-secao-wrapper.is-selected {
+    border-color: var(--studio-accent);
+}
+
+.editor-secao-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.5rem;
+    z-index: 30;
+    font-size: 0.7rem;
+    color: var(--studio-text-muted);
+}
+
+.editor-secao-wrapper:hover .editor-secao-header,
+.editor-secao-wrapper.is-selected .editor-secao-header {
+    display: flex;
+}
+
+.editor-secao-drag-handle {
+    cursor: grab;
+    font-size: 0.85rem;
+    padding: 0 0.3rem;
+}
+
+.editor-secao-acoes {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-acao-secao,
+.btn-acao-elem {
+    background: none;
+    border: none;
+    color: var(--studio-text-muted);
+    padding: 0.15rem 0.35rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.btn-acao-secao:hover,
+.btn-acao-elem:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-acao-secao.btn-danger:hover,
+.btn-acao-elem.btn-danger:hover {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Divisor Inline de Adição de Seção */
+.editor-secao-divider {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 25;
+}
+
+.editor-secao-divider:hover {
+    opacity: 1;
+}
+
+.btn-add-secao-inline {
+    background: var(--studio-surface);
+    color: var(--studio-accent);
+    border: 1px solid var(--studio-accent);
+    padding: 0.2rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Container */
+.editor-container-wrapper {
+    position: relative;
+    padding: 0.5rem;
+    min-height: 50px;
+}
+
+.editor-container-vazio {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: #94a3b8;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    margin: 0.5rem 0;
+}
+
+.editor-container-header {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+    font-size: 0.65rem;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.editor-container-wrapper.is-selected .editor-container-header {
+    display: flex;
+}
+
+/* Elemento */
+.editor-elemento-wrapper {
+    position: relative;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    transition: outline-color 0.1s;
+    user-select: none;
+}
+
+.editor-elemento-wrapper:hover {
+    outline: 1px dashed rgba(56, 189, 248, 0.6);
+}
+
+.editor-elemento-wrapper.is-selected {
+    outline: 2px solid var(--studio-accent) !important;
+}
+
+.editor-elemento-toolbar {
+    position: absolute;
+    top: -22px;
+    right: 0;
+    height: 20px;
+    background: #0f172a;
+    border-radius: 4px;
+    display: none;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.4rem;
+    z-index: 40;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+
+.editor-elemento-wrapper.is-selected .editor-elemento-toolbar {
+    display: flex;
+}
+
+.editor-elemento-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--studio-accent);
+}
+
+/* Edição Inline */
+.is-editing-inline {
+    outline: 2px solid #a855f7 !important;
+    background: rgba(168, 85, 247, 0.08);
+    border-radius: 4px;
+    cursor: text;
+    user-select: text;
+}
+
+/* Layouts de Container */
+.biosite-layout-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.biosite-layout-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.biosite-layout-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.biosite-layout-overlay {
+    position: relative;
+}
+
+/* Elementos Padrão */
+.elemento-titulo {
+    margin: 0;
+    line-height: 1.25;
+}
+
+.elemento-texto {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.elemento-botao {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    transition: filter 0.15s;
+    width: 100%;
+}
+
+.elemento-botao:hover {
+    filter: brightness(1.08);
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar Direita (Painel de Propriedades)
+   -------------------------------------------------------------------------- */
+.studio-sidebar-right {
+    width: 320px;
+    background: var(--studio-surface);
+    border-left: 1px solid var(--studio-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 20;
+    overflow-y: auto;
+}
+
+.propriedades-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--studio-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.propriedades-titulo {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--studio-text);
+}
+
+.propriedades-vazio {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--studio-text-muted);
+    font-size: 0.875rem;
+}
+
+.propriedades-form {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group-prop {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.prop-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--studio-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.prop-input,
+.prop-select {
+    width: 100%;
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    color: var(--studio-text);
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.prop-input:focus,
+.prop-select:focus {
+    border-color: var(--studio-accent);
+}
+
+.prop-btn-group {
+    display: flex;
+    border: 1px solid var(--studio-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.prop-btn-group button {
+    flex: 1;
+    background: var(--studio-surface-alt);
+    border: none;
+    color: var(--studio-text-muted);
+    padding: 0.4rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.prop-btn-group button:hover {
+    color: var(--studio-text);
+}
+
+.prop-btn-group button.active {
+    background: var(--studio-accent);
+    color: #0b0f19;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   Barra Inferior (Toolbar & Viewport Switcher)
+   -------------------------------------------------------------------------- */
+.studio-bottombar {
+    height: 44px;
+    background: var(--studio-surface);
+    border-top: 1px solid var(--studio-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    z-index: 100;
+    flex-shrink: 0;
+}
+
+.bottombar-viewports {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.btn-viewport {
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    color: var(--studio-text-muted);
+    padding: 0.25rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-viewport:hover {
+    color: var(--studio-text);
+    border-color: #4b5563;
+}
+
+.btn-viewport.active {
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--studio-accent);
+    border-color: var(--studio-accent);
+}
+
+.bottombar-controles {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.btn-controle {
+    background: none;
+    border: none;
+    color: var(--studio-text-muted);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.btn-controle:hover {
+    color: var(--studio-text);
+    background: var(--studio-surface-alt);
+}
+
+.btn-controle:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Drop targets do Sortable */
+.sortable-ghost {
+    opacity: 0.3;
+    background: rgba(56, 189, 248, 0.1) !important;
+    border: 2px dashed var(--studio-accent) !important;
+}
+
+.sortable-chosen {
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.sortable-drag {
+    cursor: grabbing !important;
+    opacity: 0.85;
+}

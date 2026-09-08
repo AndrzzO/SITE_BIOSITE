@@ -329,7 +329,51 @@ Cliente ──> ProjetoSite ──> PaginaSite ──> SecaoSite ──> Contain
 
 ---
 
-## 11. Qualidade de Código e Lint
+## 11. Editor Visual Mobile-First e Preview (Prompt 5)
+
+O estúdio de edição visual combina a simplicidade estrutural do **Google Sites** com a manipulação visual fluida e intuitiva inspirada no **Canva**, priorizando a filosofia **Smartphone-First** em todo o ciclo de vida.
+
+### 11.1 Arquitetura do Estúdio (`/painel/sites/<uuid>/editor/`)
+- **Smartphone-First Nativo:** O canvas de trabalho abre por padrão com largura de **390px** (proporção 390×844 baseada no iPhone 12/13/14), com seletor instantâneo de viewports na barra inferior:
+  - **320px** (Telas compactas)
+  - **360px** (Android padrão)
+  - **375px** (iPhone clássico)
+  - **390px** (Padrão de referência)
+  - **412px** (Android moderno)
+  - **430px** (Max/Plus)
+  - **Desktop (100%)**
+- **Renderização em DOM Direto com Isolamento CSS:** O canvas de edição e o preview operam no mesmo documento DOM com estrito isolamento por namespaces (`#editor-studio-app` para a interface do estúdio vs `#biosite-canvas-viewport` e `.biosite-canvas-root` para o conteúdo do BioSite), evitando as complexidades e atritos de sincronização de iframes.
+- **Motor de Renderização Compartilhado (`aplicativos/sites/renderer.py`):** A classe universal `RenderizadorBioSite` gera HTML semântico com injeção de CSS mobile-first (`.biosite-elem-<id>`, `.biosite-sec-<id>`) e media queries para desktop (`@media (min-width: 768px)`), alternando entre modo administrativo (`modo="editor"`) e modo limpo (`modo="preview"`).
+
+### 11.2 Interações Visuais e Drag-and-Drop
+- **SortableJS Local:** Utiliza `SortableJS` (v1.15.6) empacotado localmente (`static/editor/js/vendor/sortable.min.js`), com zero dependência de CDNs externas.
+- **Reordenação de Seções:** Arraste vertical de seções via alça (`⋮⋮`) com persistência imediata no backend.
+- **Manipulação de Elementos:** Arraste e solte de elementos dentro do mesmo container ou transferência fluida entre containers diferentes.
+- **Paleta de Elementos:** Inserção imediata por clique na barra lateral esquerda ou por arrastar para o container desejado.
+- **Edição de Texto in loco (Inline):** Duplo clique em títulos (`TITULO`) ou parágrafos (`TEXTO`) ativa edição instantânea (`contenteditable`), com sanitização rigorosa de colar (`paste`) em texto puro sem formatação externa indesejada.
+
+### 11.3 Painel de Propriedades e Autosave
+- **Inspetor Contextual (Sidebar Direita):** Ao selecionar um elemento, container ou seção, o painel exibe seus parâmetros de conteúdo (texto, nível h1-h6, rótulo, URL de link) e controles de estilo:
+  - Edição base (Mobile-first)
+  - Overrides específicos para Desktop
+  - Cores, tipografia, alinhamento, espaçamentos e bordas
+- **Debounced Autosave (700ms):** Fila de salvamento assíncrono com indicador visual na barra superior (`Salvando...`, `✓ Salvo`, `Erro ao salvar`) e proteção contra fechamento acidental de aba (`beforeunload`).
+- **Histórico e Teclas de Atalho:** Pilha de Undo/Redo na sessão do navegador com suporte completo a atalhos:
+  - `Ctrl + S`: Força salvamento manual imediato
+  - `Ctrl + Z`: Desfazer
+  - `Ctrl + Y` / `Ctrl + Shift + Z`: Refazer
+  - `Ctrl + D`: Duplicar entidade selecionada
+  - `Delete` / `Backspace`: Excluir entidade selecionada
+  - `Esc`: Limpar seleção ativa
+
+### 11.4 Visualização Fiel e Segura (Preview)
+- **Rota Dedicada:** `/painel/sites/<uuid>/preview/` exibe o rascunho com 100% de paridade visual em relação ao editor, renderizado com `RenderizadorBioSite(modo="preview")` sem qualquer alça, toolbar ou wrapper administrativo.
+- **Proteção IDOR Estrita:** Todas as rotas de API do editor validam a integridade de projeto cruzado no nível mais profundo (`elemento.container.secao.pagina.projeto == site`), retornando 404/422 diante de qualquer tentativa de adulteração de nós.
+- **Botão de Publicação Informativo:** Botão "Publicar" explicitamente desativado com indicação visual para o Prompt 11, evitando simulação ou falsas publicações.
+
+---
+
+## 12. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -343,13 +387,13 @@ ruff format .
 
 ---
 
-## 12. Próximas Etapas (Prompts 5 a 12)
+## 13. Próximas Etapas (Prompts 6 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
 3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional *(Concluído)*
 4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos *(Concluído)*
-5. **Prompt 5:** Editor Visual Mobile-First
+5. **Prompt 5:** Editor Visual Mobile-First e Preview *(Concluído)*
 6. **Prompt 6:** Componentes e Blocos Específicos de BioSite
 7. **Prompt 7:** Temas, Tipografia e Design System
 8. **Prompt 8:** Integração e Redirecionamento NFC

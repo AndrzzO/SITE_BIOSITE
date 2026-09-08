@@ -11,6 +11,22 @@ from .views import (
     ProjetoSiteUpdateView,
     WorkspaceSitesView,
 )
+from .views_editor import (
+    EditorDadosJsonView,
+    EditorElementoCriarView,
+    EditorElementoDuplicarView,
+    EditorElementoExcluirView,
+    EditorElementoMoverView,
+    EditorElementoSalvarView,
+    EditorPaginaCriarView,
+    EditorSecaoCriarView,
+    EditorSecaoDuplicarView,
+    EditorSecaoExcluirView,
+    EditorSecaoMoverView,
+    EditorSecaoPropriedadesView,
+    EditorStudioView,
+    PreviewSiteView,
+)
 from .views_estrutura import (
     ContainerCriarView,
     ElementoCriarView,
@@ -33,6 +49,65 @@ urlpatterns = [
     path("<uuid:uuid>/duplicar/", ProjetoSiteDuplicarView.as_view(), name="site_duplicar"),
     path("<uuid:uuid>/arquivar/", ProjetoSiteArquivarView.as_view(), name="site_arquivar"),
     path("<uuid:uuid>/restaurar/", ProjetoSiteRestaurarView.as_view(), name="site_restaurar"),
+    # Editor Visual Mobile-First e Preview (Prompt 5)
+    path("<uuid:uuid>/editor/", EditorStudioView.as_view(), name="site_editor"),
+    path("<uuid:uuid>/editor/dados/", EditorDadosJsonView.as_view(), name="site_editor_dados"),
+    path(
+        "<uuid:uuid>/editor/elemento/salvar/",
+        EditorElementoSalvarView.as_view(),
+        name="site_editor_elemento_salvar",
+    ),
+    path(
+        "<uuid:uuid>/editor/elemento/criar/",
+        EditorElementoCriarView.as_view(),
+        name="site_editor_elemento_criar",
+    ),
+    path(
+        "<uuid:uuid>/editor/elemento/mover/",
+        EditorElementoMoverView.as_view(),
+        name="site_editor_elemento_mover",
+    ),
+    path(
+        "<uuid:uuid>/editor/elemento/<int:elemento_id>/duplicar/",
+        EditorElementoDuplicarView.as_view(),
+        name="site_editor_elemento_duplicar",
+    ),
+    path(
+        "<uuid:uuid>/editor/elemento/<int:elemento_id>/excluir/",
+        EditorElementoExcluirView.as_view(),
+        name="site_editor_elemento_excluir",
+    ),
+    path(
+        "<uuid:uuid>/editor/secao/criar/",
+        EditorSecaoCriarView.as_view(),
+        name="site_editor_secao_criar",
+    ),
+    path(
+        "<uuid:uuid>/editor/secao/mover/",
+        EditorSecaoMoverView.as_view(),
+        name="site_editor_secao_mover",
+    ),
+    path(
+        "<uuid:uuid>/editor/secao/<int:secao_id>/duplicar/",
+        EditorSecaoDuplicarView.as_view(),
+        name="site_editor_secao_duplicar",
+    ),
+    path(
+        "<uuid:uuid>/editor/secao/<int:secao_id>/excluir/",
+        EditorSecaoExcluirView.as_view(),
+        name="site_editor_secao_excluir",
+    ),
+    path(
+        "<uuid:uuid>/editor/secao/<int:secao_id>/propriedades/",
+        EditorSecaoPropriedadesView.as_view(),
+        name="site_editor_secao_propriedades",
+    ),
+    path(
+        "<uuid:uuid>/editor/pagina/criar/",
+        EditorPaginaCriarView.as_view(),
+        name="site_editor_pagina_criar",
+    ),
+    path("<uuid:uuid>/preview/", PreviewSiteView.as_view(), name="site_preview"),
     # Motor Estrutural de Páginas, Seções, Containers e Elementos (Prompt 4)
     path("<uuid:uuid>/estrutura/", EstruturaSiteView.as_view(), name="site_estrutura"),
     path(

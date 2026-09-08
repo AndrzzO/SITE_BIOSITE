@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo_pagina }} — BioSite Preview</title>
+    <link rel="stylesheet" href="{% static 'editor/css/editor.css' %}">
+    <style>
+        :root {
+            --preview-bar-bg: #0f172a;
+            --preview-bar-border: #1e293b;
+            --preview-bar-text: #f8fafc;
+            --preview-bar-muted: #94a3b8;
+            --preview-accent: #38bdf8;
+            --preview-bg: #0b0f19;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--preview-bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #111827;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Topbar discreta do Preview */
+        .preview-topbar {
+            height: 52px;
+            background: var(--preview-bar-bg);
+            border-bottom: 1px solid var(--preview-bar-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        .preview-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .preview-btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--preview-bar-text);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.15s;
+        }
+
+        .preview-btn-voltar:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--preview-accent);
+            color: var(--preview-accent);
+        }
+
+        .preview-info {
+            font-size: 0.875rem;
+            color: var(--preview-bar-muted);
+        }
+
+        .preview-info strong {
+            color: var(--preview-bar-text);
+        }
+
+        .preview-topbar-center {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .preview-viewport-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: var(--preview-bar-muted);
+            padding: 0.35rem 0.65rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preview-viewport-btn:hover {
+            color: var(--preview-bar-text);
+            border-color: #475569;
+        }
+
+        .preview-viewport-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--preview-accent);
+            border-color: var(--preview-accent);
+        }
+
+        .preview-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .preview-pagina-select {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: var(--preview-bar-text);
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .preview-badge-modo {
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+        }
+
+        /* Área de exibição do Preview */
+        .preview-stage {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 2.5rem 1rem 4rem 1rem;
+            overflow-y: auto;
+            background-color: #0b0f19;
+            background-image: radial-gradient(rgba(55, 65, 81, 0.3) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .preview-viewport-container {
+            width: 390px; /* Padrão Smartphone-First */
+            max-width: 100%;
+            background: #ffffff;
+            border-radius: 36px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.2s ease;
+            position: relative;
+            min-height: 844px;
+        }
+
+        .preview-viewport-container.is-desktop {
+            width: 100% !important;
+            max-width: 1140px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Moldura de Smartphone (Notch/Speaker) */
+        .preview-phone-notch {
+            height: 24px;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-phone-speaker {
+            width: 70px;
+            height: 4px;
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        .preview-viewport-container.is-desktop .preview-phone-notch {
+            display: none;
+        }
+
+        .biosite-canvas-root.preview-mode {
+            min-height: 800px;
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topbar Fiel de Visualização -->
+    <header class="preview-topbar">
+        <div class="preview-topbar-left">
+            <a href="{% url 'painel:site_editor' site.uuid %}" class="preview-btn-voltar">
+                &larr; Voltar ao Editor
+            </a>
+            <div class="preview-info">
+                <strong>{{ site.nome }}</strong> &bull; {{ pagina_atual.titulo }}
+            </div>
+        </div>
+
+        <div class="preview-topbar-center">
+            <button type="button" class="preview-viewport-btn" data-width="320">320px</button>
+            <button type="button" class="preview-viewport-btn" data-width="375">375px</button>
+            <button type="button" class="preview-viewport-btn active" data-width="390">390px (Padrão)</button>
+            <button type="button" class="preview-viewport-btn" data-width="430">430px</button>
+            <button type="button" class="preview-viewport-btn" data-width="desktop">Desktop</button>
+        </div>
+
+        <div class="preview-topbar-right">
+            {% if paginas|length > 1 %}
+                <select class="preview-pagina-select" onchange="window.location.href='?pagina=' + this.value;">
+                    {% for pag in paginas %}
+                        <option value="{{ pag.id }}" {% if pag.id == pagina_atual.id %}selected{% endif %}>
+                            {{ pag.titulo }}{% if pag.eh_inicial %} (Início){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            <span class="preview-badge-modo">Preview Fiel</span>
+        </div>
+    </header>
+
+    <!-- Área de Visualização Fiel (100% livre de controles de edição) -->
+    <main class="preview-stage">
+        <div class="preview-viewport-container" id="preview-container">
+            <div class="preview-phone-notch">
+                <div class="preview-phone-speaker"></div>
+            </div>
+            {{ html_preview|safe }}
+        </div>
+    </main>
+
+    <script>
+        (function() {
+            const container = document.getElementById('preview-container');
+            const btns = document.querySelectorAll('.preview-viewport-btn');
+
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const width = btn.getAttribute('data-width');
+                    if (width === 'desktop') {
+                        container.classList.add('is-desktop');
+                        container.style.width = '100%';
+                    } else {
+                        container.classList.remove('is-desktop');
+                        container.style.width = width + 'px';
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
