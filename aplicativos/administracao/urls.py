@@ -15,5 +15,6 @@ urlpatterns = [
     path("logout/", LogoutAdministrativoView.as_view(), name="logout"),
     path("clientes/", include("aplicativos.clientes.urls")),
     path("sites/", include("aplicativos.sites.urls")),
+    path("templates/", include("aplicativos.sites.urls_templates")),
     path("", WorkspaceRedirectView.as_view(), name="inicio"),
 ]

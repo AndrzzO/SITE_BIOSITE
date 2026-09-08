@@ -88,6 +88,15 @@ class ProjetoSite(ModeloBase):
         blank=True,
         help_text=_("Imagem de visualização no workspace (opcional)."),
     )
+    template_origem = models.ForeignKey(
+        "TemplateSite",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projetos_derivados",
+        verbose_name=_("Modelo de Origem"),
+        help_text=_("Modelo/template utilizado como ponto de partida inicial (informativo)."),
+    )
     arquivado_em = models.DateTimeField(
         _("Arquivado em"),
         null=True,
@@ -660,3 +669,176 @@ class MidiaSite(ModeloBase):
         if self.arquivo:
             return self.arquivo.url
         return ""
+
+
+class TemplateSite(ModeloBase):
+    """
+    Modelo de blueprint estrutural reutilizável para criação ágil de BioSites.
+
+    Armazena um snapshot estrutural validado (configuração visual, páginas,
+    seções, containers e elementos) sem manter acoplamento com projetos instanciados.
+    """
+
+    class Categoria(models.TextChoices):
+        BIOSITE = "biosite", _("BioSite")
+        CARTAO_DIGITAL = "cartao_digital", _("Cartão Digital NFC")
+        PROFISSIONAL = "profissional", _("Profissional Liberal")
+        EMPRESA = "empresa", _("Empresa / Negócio")
+        COMERCIO = "comercio", _("Comércio / Varejo")
+        RESTAURANTE = "restaurante", _("Restaurante / Gastronomia")
+        PORTFOLIO = "portfolio", _("Portfólio / Criativo")
+        LANDING_PAGE = "landing_page", _("Landing Page")
+        OUTRO = "outro", _("Outro")
+
+    class Origem(models.TextChoices):
+        SISTEMA = "sistema", _("Sistema")
+        USUARIO = "usuario", _("Meus Modelos")
+
+    nome = models.CharField(
+        _("Nome do Modelo"),
+        max_length=120,
+    )
+    slug = models.SlugField(
+        _("Slug"),
+        max_length=120,
+        unique=True,
+        db_index=True,
+    )
+    descricao = models.TextField(
+        _("Descrição"),
+        blank=True,
+    )
+    categoria = models.CharField(
+        _("Categoria"),
+        max_length=30,
+        choices=Categoria.choices,
+        default=Categoria.BIOSITE,
+        db_index=True,
+    )
+    origem = models.CharField(
+        _("Origem"),
+        max_length=20,
+        choices=Origem.choices,
+        default=Origem.SISTEMA,
+        db_index=True,
+    )
+    versao = models.PositiveIntegerField(
+        _("Versão"),
+        default=1,
+    )
+    thumbnail = models.ImageField(
+        _("Miniatura"),
+        upload_to="templates/thumbnails/",
+        null=True,
+        blank=True,
+    )
+    ativo = models.BooleanField(
+        _("Ativo"),
+        default=True,
+    )
+    ordem = models.PositiveIntegerField(
+        _("Ordem"),
+        default=10,
+    )
+    estrutura_snapshot = models.JSONField(
+        _("Snapshot Estrutural"),
+        default=dict,
+        blank=True,
+        help_text=_("Snapshot validado contendo configuracao_visual e árvore de páginas."),
+    )
+
+    class Meta:
+        verbose_name = _("modelo de site")
+        verbose_name_plural = _("modelos de sites")
+        ordering = ["ordem", "nome"]
+
+    def __str__(self) -> str:
+        return f"{self.nome} ({self.get_origem_display()})"
+
+
+class BlocoReutilizavel(ModeloBase):
+    """
+    Composição reutilizável de uma seção completa para inserção no editor visual.
+
+    Armazena um snapshot de SecaoSite (containers e elementos) que herda
+    automaticamente os tokens de design do projeto de destino ao ser inserido.
+    """
+
+    class Categoria(models.TextChoices):
+        HERO = "hero", _("Hero / Destaque")
+        PERFIL = "perfil", _("Perfil / Bio")
+        LINKS = "links", _("Links / Botões")
+        SERVICOS = "servicos", _("Serviços / Produtos")
+        GALERIA = "galeria", _("Galeria / Fotos")
+        CONTATO = "contato", _("Contato / Conexão")
+        CTA = "cta", _("Chamada para Ação")
+        LOCALIZACAO = "localizacao", _("Localização / Mapa")
+        RODAPE = "rodape", _("Rodapé")
+        OUTRO = "outro", _("Outro")
+
+    class Origem(models.TextChoices):
+        SISTEMA = "sistema", _("Sistema")
+        USUARIO = "usuario", _("Meus Blocos")
+
+    nome = models.CharField(
+        _("Nome do Bloco"),
+        max_length=120,
+    )
+    slug = models.SlugField(
+        _("Slug"),
+        max_length=120,
+        unique=True,
+        db_index=True,
+    )
+    descricao = models.TextField(
+        _("Descrição"),
+        blank=True,
+    )
+    categoria = models.CharField(
+        _("Categoria"),
+        max_length=30,
+        choices=Categoria.choices,
+        default=Categoria.HERO,
+        db_index=True,
+    )
+    origem = models.CharField(
+        _("Origem"),
+        max_length=20,
+        choices=Origem.choices,
+        default=Origem.SISTEMA,
+        db_index=True,
+    )
+    versao = models.PositiveIntegerField(
+        _("Versão"),
+        default=1,
+    )
+    thumbnail = models.ImageField(
+        _("Miniatura"),
+        upload_to="blocos/thumbnails/",
+        null=True,
+        blank=True,
+    )
+    ativo = models.BooleanField(
+        _("Ativo"),
+        default=True,
+    )
+    ordem = models.PositiveIntegerField(
+        _("Ordem"),
+        default=10,
+    )
+    estrutura_snapshot = models.JSONField(
+        _("Snapshot Estrutural"),
+        default=dict,
+        blank=True,
+        help_text=_(
+            "Snapshot validado contendo a estrutura de uma seção com containers e elementos."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("bloco reutilizável")
+        verbose_name_plural = _("blocos reutilizáveis")
+        ordering = ["ordem", "nome"]
+
+    def __str__(self) -> str:
+        return f"{self.nome} ({self.get_categoria_display()})"

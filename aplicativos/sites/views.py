@@ -79,9 +79,44 @@ class ProjetoSiteCreateView(RequerAutenticacaoAdministrativaMixin, CreateView):
             cliente = Cliente.objects.filter(uuid=cliente_uuid, status=Cliente.Status.ATIVO).first()
             if cliente:
                 initial["cliente"] = cliente
+
+        # Permite pré-selecionar template ao clicar a partir da biblioteca de templates
+        template_uuid = self.request.GET.get("template", "")
+        if template_uuid:
+            from .models import TemplateSite
+
+            template = TemplateSite.objects.filter(uuid=template_uuid, ativo=True).first()
+            if template:
+                initial["template_origem"] = template
+
         return initial
 
     def form_valid(self, form: ProjetoSiteCriacaoForm) -> HttpResponse:
+        template_origem = form.cleaned_data.get("template_origem")
+        if template_origem:
+            from django.core.exceptions import ValidationError
+
+            from .servicos_templates import instanciar_template
+
+            try:
+                self.object = instanciar_template(
+                    template=template_origem,
+                    cliente=form.cleaned_data["cliente"],
+                    nome=form.cleaned_data["nome"],
+                    slug=form.cleaned_data.get("slug"),
+                    tipo=form.cleaned_data.get("tipo", ProjetoSite.Tipo.BIOSITE),
+                    descricao_interna=form.cleaned_data.get("descricao_interna", ""),
+                )
+                messages.success(
+                    self.request,
+                    f"Projeto '{self.object.nome}' criado com sucesso a partir do modelo '{template_origem.nome}'!",
+                )
+                return redirect("painel:site_editor", uuid=self.object.uuid)
+            except ValidationError as e:
+                form.add_error(None, f"Erro ao instanciar modelo: {e}")
+                return self.form_invalid(form)
+
+        # Criação em branco tradicional
         response = super().form_valid(form)
         from .servicos_estrutura import garantir_pagina_inicial
 
@@ -94,7 +129,17 @@ class ProjetoSiteCreateView(RequerAutenticacaoAdministrativaMixin, CreateView):
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
+        from .models import TemplateSite
+
         context["titulo_pagina"] = "Novo Projeto de Site"
+        context["templates_disponiveis"] = TemplateSite.objects.filter(ativo=True).order_by(
+            "ordem", "nome"
+        )
+        template_uuid = self.request.GET.get("template", "")
+        if template_uuid:
+            context["template_preselecionado"] = TemplateSite.objects.filter(
+                uuid=template_uuid, ativo=True
+            ).first()
         return context
 
 

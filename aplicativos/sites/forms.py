@@ -34,8 +34,10 @@ class ProjetoSiteCriacaoForm(forms.ModelForm):
             "slug",
             "tipo",
             "descricao_interna",
+            "template_origem",
         ]
         widgets = {
+            "template_origem": forms.HiddenInput(),
             "cliente": forms.Select(attrs={"class": "form-input"}),
             "nome": forms.TextInput(
                 attrs={
@@ -59,6 +61,7 @@ class ProjetoSiteCriacaoForm(forms.ModelForm):
         # Exibe apenas clientes com status ATIVO para novos projetos
         self.fields["cliente"].queryset = Cliente.objects.filter(status=Cliente.Status.ATIVO)
         self.fields["cliente"].empty_label = "Selecione um cliente..."
+        self.fields["template_origem"].required = False
 
     def clean_nome(self) -> str:
         nome = self.cleaned_data.get("nome", "").strip()

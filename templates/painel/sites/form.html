@@ -2,6 +2,86 @@
 
 {% block title %}{{ titulo_pagina }} — BioSite NFC{% endblock %}
 
+{% block extra_css %}
+<style>
+    .template-picker-section {
+        margin-bottom: 2rem;
+    }
+
+    .template-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .starter-card {
+        background: var(--painel-surface);
+        border: 2px solid var(--painel-border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+        position: relative;
+    }
+
+    .starter-card:hover {
+        border-color: var(--painel-border-focus);
+        transform: translateY(-2px);
+    }
+
+    .starter-card.selected {
+        border-color: var(--painel-accent);
+        background: rgba(56, 189, 248, 0.05);
+        box-shadow: 0 0 0 1px var(--painel-accent);
+    }
+
+    .starter-card-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .starter-card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--painel-text);
+        margin-bottom: 0.25rem;
+    }
+
+    .starter-card-desc {
+        font-size: 0.8125rem;
+        color: var(--painel-text-muted);
+        line-height: 1.4;
+    }
+
+    .starter-card-check {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--painel-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: transparent;
+        transition: all var(--transition-fast);
+    }
+
+    .starter-card.selected .starter-card-check {
+        background: var(--painel-accent);
+        border-color: var(--painel-accent);
+        color: #0b0f19;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <nav class="breadcrumbs" aria-label="Navegação Estrutural">
     <a href="{% url 'painel:sites' %}">Meus Sites</a>
@@ -12,12 +92,18 @@
 <div class="workspace-header">
     <div>
         <h1 class="workspace-title">{{ titulo_pagina }}</h1>
-        <p class="workspace-subtitle">Configure as informações administrativas e o endereço do projeto.</p>
+        <p class="workspace-subtitle">
+            {% if site %}
+                Atualize as configurações e metadados do projeto.
+            {% else %}
+                Escolha um ponto de partida ou modelo pronto e configure os dados iniciais do BioSite.
+            {% endif %}
+        </p>
     </div>
 </div>
 
-<div class="detail-card" style="max-width: 680px;">
-    <form method="post" novalidate>
+<div class="detail-card" style="max-width: {% if not site %}980px{% else %}680px{% endif %};">
+    <form method="post" id="site-form" novalidate>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -28,90 +114,161 @@
             </div>
         {% endif %}
 
-        <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <label for="{{ form.cliente.id_for_label }}" class="form-label" style="margin-bottom: 0;">
-                    {{ form.cliente.label }} <span style="color: var(--painel-danger);">*</span>
+        {% if not site %}
+            {{ form.template_origem }}
+
+            <!-- Seletor Visual de Ponto de Partida -->
+            <div class="template-picker-section">
+                <label class="form-label" style="font-size: 0.9375rem; font-weight: 600;">
+                    Ponto de Partida do Projeto
                 </label>
-                <a href="{% url 'painel:cliente_novo' %}?proximo=novo_site" style="font-size: 0.8125rem; color: var(--painel-accent); text-decoration: none;">
-                    + Cadastrar Novo Cliente
+
+                <div class="template-picker-grid">
+                    <!-- Opção Em Branco -->
+                    <div class="starter-card {% if not template_preselecionado %}selected{% endif %}" data-template-id="" id="card-em-branco">
+                        <div class="starter-card-check">✓</div>
+                        <div class="starter-card-icon">📄</div>
+                        <div class="starter-card-title">[ Em Branco ]</div>
+                        <div class="starter-card-desc">Começar do zero com uma página inicial limpa e pronta para montagem livre.</div>
+                    </div>
+
+                    <!-- Modelos do Sistema e do Usuário -->
+                    {% for tmpl in templates_disponiveis %}
+                        <div class="starter-card {% if template_preselecionado and template_preselecionado.id == tmpl.id %}selected{% endif %}" data-template-id="{{ tmpl.id }}" data-template-nome="{{ tmpl.nome }}">
+                            <div class="starter-card-check">✓</div>
+                            <div class="starter-card-icon">
+                                {% if tmpl.categoria == 'biosite' %}📱
+                                {% elif tmpl.categoria == 'cartao_digital' %}💳
+                                {% elif tmpl.categoria == 'profissional' %}👔
+                                {% elif tmpl.categoria == 'empresa' %}🏢
+                                {% elif tmpl.categoria == 'restaurante' %}🍽️
+                                {% elif tmpl.categoria == 'portfolio' %}🎨
+                                {% elif tmpl.categoria == 'comercio' %}🛍️
+                                {% else %}🌐{% endif %}
+                            </div>
+                            <div class="starter-card-title">{{ tmpl.nome }}</div>
+                            <div class="starter-card-desc">{{ tmpl.descricao|default:tmpl.get_categoria_display }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <hr style="border: 0; border-top: 1px solid var(--painel-border); margin: 2rem 0;">
+        {% endif %}
+
+        <div style="max-width: 680px;">
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="{{ form.cliente.id_for_label }}" class="form-label" style="margin-bottom: 0;">
+                        {{ form.cliente.label }} <span style="color: var(--painel-danger);">*</span>
+                    </label>
+                    <a href="{% url 'painel:cliente_novo' %}?proximo=novo_site" style="font-size: 0.8125rem; color: var(--painel-accent); text-decoration: none;">
+                        + Cadastrar Novo Cliente
+                    </a>
+                </div>
+                {{ form.cliente }}
+                {% if form.cliente.help_text %}
+                    <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.cliente.help_text }}</small>
+                {% endif %}
+                {% if form.cliente.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.cliente.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.nome.id_for_label }}" class="form-label">
+                    {{ form.nome.label }} <span style="color: var(--painel-danger);">*</span>
+                </label>
+                {{ form.nome }}
+                {% if form.nome.help_text %}
+                    <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.nome.help_text }}</small>
+                {% endif %}
+                {% if form.nome.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.nome.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="{{ form.slug.id_for_label }}" class="form-label">
+                        {{ form.slug.label }}
+                    </label>
+                    {{ form.slug }}
+                    {% if form.slug.help_text %}
+                        <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.slug.help_text }}</small>
+                    {% endif %}
+                    {% if form.slug.errors %}
+                        <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                            {{ form.slug.errors|striptags }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                        {{ form.tipo.label }}
+                    </label>
+                    {{ form.tipo }}
+                    {% if form.tipo.errors %}
+                        <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                            {{ form.tipo.errors|striptags }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.descricao_interna.id_for_label }}" class="form-label">
+                    {{ form.descricao_interna.label }}
+                </label>
+                {{ form.descricao_interna }}
+                {% if form.descricao_interna.errors %}
+                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
+                        {{ form.descricao_interna.errors|striptags }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" id="btn-submit-projeto">
+                    {% if not site %}Criar e Abrir no Estúdio{% else %}Salvar Alterações{% endif %}
+                </button>
+                <a href="{% if site %}{% url 'painel:site_detalhe' site.uuid %}{% else %}{% url 'painel:sites' %}{% endif %}" class="btn btn-secondary">
+                    Cancelar
                 </a>
             </div>
-            {{ form.cliente }}
-            {% if form.cliente.help_text %}
-                <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.cliente.help_text }}</small>
-            {% endif %}
-            {% if form.cliente.errors %}
-                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
-                    {{ form.cliente.errors|striptags }}
-                </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.nome.id_for_label }}" class="form-label">
-                {{ form.nome.label }} <span style="color: var(--painel-danger);">*</span>
-            </label>
-            {{ form.nome }}
-            {% if form.nome.help_text %}
-                <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.nome.help_text }}</small>
-            {% endif %}
-            {% if form.nome.errors %}
-                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
-                    {{ form.nome.errors|striptags }}
-                </div>
-            {% endif %}
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-                <label for="{{ form.slug.id_for_label }}" class="form-label">
-                    {{ form.slug.label }}
-                </label>
-                {{ form.slug }}
-                {% if form.slug.help_text %}
-                    <small style="color: var(--painel-text-muted); font-size: 0.75rem;">{{ form.slug.help_text }}</small>
-                {% endif %}
-                {% if form.slug.errors %}
-                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
-                        {{ form.slug.errors|striptags }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="form-group">
-                <label for="{{ form.tipo.id_for_label }}" class="form-label">
-                    {{ form.tipo.label }}
-                </label>
-                {{ form.tipo }}
-                {% if form.tipo.errors %}
-                    <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
-                        {{ form.tipo.errors|striptags }}
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.descricao_interna.id_for_label }}" class="form-label">
-                {{ form.descricao_interna.label }}
-            </label>
-            {{ form.descricao_interna }}
-            {% if form.descricao_interna.errors %}
-                <div style="color: var(--painel-danger); font-size: 0.8125rem; margin-top: 0.25rem;">
-                    {{ form.descricao_interna.errors|striptags }}
-                </div>
-            {% endif %}
-        </div>
-
-        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-            <button type="submit" class="btn btn-primary">
-                Salvar Projeto
-            </button>
-            <a href="{% if site %}{% url 'painel:site_detalhe' site.uuid %}{% else %}{% url 'painel:sites' %}{% endif %}" class="btn btn-secondary">
-                Cancelar
-            </a>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputTemplateOrigem = document.getElementById('{{ form.template_origem.id_for_label }}');
+        const cards = document.querySelectorAll('.starter-card');
+        const inputNome = document.getElementById('{{ form.nome.id_for_label }}');
+
+        if (inputTemplateOrigem && cards.length > 0) {
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    cards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    const templateId = this.getAttribute('data-template-id');
+                    inputTemplateOrigem.value = templateId || '';
+
+                    // Sugere nome se o campo de nome estiver vazio
+                    const templateNome = this.getAttribute('data-template-nome');
+                    if (templateNome && inputNome && !inputNome.value.trim()) {
+                        inputNome.value = 'BioSite ' + templateNome;
+                    }
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

@@ -4,6 +4,7 @@ Garante fidelidade visual idêntica entre o canvas de edição e a visualizaçã
 respeitando a filosofia Mobile-First e isolamento de CSS.
 """
 
+import copy
 from typing import Any
 
 from django.utils.html import escape, format_html
@@ -302,6 +303,7 @@ class RenderizadorBioSite:
                             <span class="editor-secao-tipo">({})</span>
                         </div>
                         <div class="editor-secao-acoes">
+                            <button type="button" class="btn-acao-secao" data-acao="salvar-bloco" title="Salvar seção como Bloco Reutilizável">💾</button>
                             <button type="button" class="btn-acao-secao" data-acao="duplicar" title="Duplicar seção">⎘</button>
                             <button type="button" class="btn-acao-secao btn-danger" data-acao="excluir" title="Excluir seção">✕</button>
                         </div>
@@ -401,6 +403,136 @@ class RenderizadorBioSite:
             tag_tokens,
             mark_safe("".join(secoes_html)),
         )
+
+    def renderizar_snapshot(self, snapshot: dict[str, Any]) -> SafeString:
+        """Renderiza um snapshot estrutural de TemplateSite em memória (Preview Fiel)."""
+        config_dict = snapshot.get("configuracao_visual", {})
+        bloco_tokens = gerar_bloco_tokens_de_dict(config_dict)
+        tag_tokens = format_html(
+            '<style id="biosite-tokens-css">{}</style>', mark_safe(bloco_tokens)
+        )
+
+        paginas = snapshot.get("paginas", [])
+        secoes_html = []
+        if paginas:
+            primeira_pagina = paginas[0]
+            for idx_s, s_dict in enumerate(primeira_pagina.get("secoes", [])):
+                secoes_html.append(self.renderizar_snapshot_secao(s_dict, id_secao=idx_s + 1))
+
+        return format_html(
+            """
+            <div class="biosite-canvas-root preview-mode" id="biosite-canvas-root" data-pagina-id="snapshot">
+                {}
+                {}
+            </div>
+            """,
+            tag_tokens,
+            mark_safe("".join(secoes_html)),
+        )
+
+    def renderizar_snapshot_secao(
+        self, secao_dict: dict[str, Any], id_secao: int = 1
+    ) -> SafeString:
+        """Renderiza uma seção de snapshot estrutural em memória."""
+        classe_seletor = f"biosite-sec-snap-{id_secao}"
+        classe_tipo = f"biosite-secao-{secao_dict.get('tipo', 'normal').lower()}"
+        estilos_css = self.converter_estilos_para_css(
+            secao_dict.get("estilos", {}), f".{classe_seletor}"
+        )
+        tag_style = format_html("<style>{}</style>", mark_safe(estilos_css)) if estilos_css else ""
+
+        containers_html = []
+        for idx_c, c_dict in enumerate(secao_dict.get("containers", [])):
+            containers_html.append(
+                self._renderizar_snapshot_container(c_dict, id_container=f"{id_secao}_{idx_c + 1}")
+            )
+
+        return format_html(
+            '<section class="biosite-secao {} {}">{}{}</section>',
+            classe_tipo,
+            classe_seletor,
+            mark_safe(tag_style),
+            mark_safe("".join(containers_html)),
+        )
+
+    def _renderizar_snapshot_container(
+        self, container_dict: dict[str, Any], id_container: str = "1"
+    ) -> SafeString:
+        tipo_layout = container_dict.get("tipo_layout", "stack")
+        classe_layout = f"layout-{tipo_layout}"
+        classe_seletor = f"biosite-cont-snap-{id_container}"
+        estilos_css = self.converter_estilos_para_css(
+            container_dict.get("estilos", {}), f".{classe_seletor}"
+        )
+        tag_style = format_html("<style>{}</style>", mark_safe(estilos_css)) if estilos_css else ""
+
+        elementos_html = []
+        for idx_e, e_dict in enumerate(container_dict.get("elementos", [])):
+            tipo = e_dict.get("tipo", "").lower()
+            if RegistroElementos.eh_valido(tipo):
+                definicao = RegistroElementos.obter(tipo)
+                conteudo = copy.deepcopy(definicao.conteudo_padrao())
+                conteudo.update(e_dict.get("conteudo", {}))
+                elem_fake = type(
+                    "ElementoSnapshot",
+                    (),
+                    {
+                        "id": f"{id_container}_{idx_e + 1}",
+                        "tipo": tipo.upper(),
+                        "conteudo": conteudo,
+                        "estilos": e_dict.get("estilos", {}),
+                    },
+                )()
+                elem_html = definicao.render(elem_fake)
+                elem_classe = f"biosite-elem-snap-{elem_fake.id}"
+                elem_css = self.converter_estilos_para_css(elem_fake.estilos, f".{elem_classe}")
+                elem_style = (
+                    format_html("<style>{}</style>", mark_safe(elem_css)) if elem_css else ""
+                )
+                elementos_html.append(
+                    format_html(
+                        '<div class="biosite-elemento {}">{}{}</div>',
+                        elem_classe,
+                        mark_safe(elem_style),
+                        mark_safe(elem_html),
+                    )
+                )
+
+        filhos_html = []
+        for idx_f, f_dict in enumerate(container_dict.get("filhos", [])):
+            filhos_html.append(
+                self._renderizar_snapshot_container(
+                    f_dict, id_container=f"{id_container}_f{idx_f + 1}"
+                )
+            )
+
+        return format_html(
+            '<div class="biosite-container {} {}">{}{}{}</div>',
+            classe_layout,
+            classe_seletor,
+            mark_safe(tag_style),
+            mark_safe("".join(elementos_html)),
+            mark_safe("".join(filhos_html)),
+        )
+
+
+def gerar_bloco_tokens_de_dict(config_dict: dict[str, Any]) -> str:
+    """Gera bloco CSS :root com variáveis a partir de um dicionário de configuração visual."""
+    tokens = {
+        "--cor-primaria": config_dict.get("cor_primaria", "#2563eb"),
+        "--cor-secundaria": config_dict.get("cor_secundaria", "#38bdf8"),
+        "--cor-fundo": config_dict.get("cor_fundo", "#ffffff"),
+        "--cor-superficie": config_dict.get("cor_superficie", "#f8fafc"),
+        "--cor-texto": config_dict.get("cor_texto", "#0f172a"),
+        "--cor-texto-secundario": config_dict.get("cor_texto_secundario", "#64748b"),
+        "--fonte-principal": config_dict.get("fonte_principal", "Inter, sans-serif"),
+        "--fonte-titulos": config_dict.get("fonte_titulos", "Inter, sans-serif"),
+        "--radius-padrao": config_dict.get("radius_padrao", "12px"),
+        "--sombra-padrao": config_dict.get("sombra_padrao", "suave"),
+        "--largura-maxima-mobile": f"{config_dict.get('largura_maxima_mobile', 390)}px",
+    }
+    regras = [f"  {k}: {v};" for k, v in tokens.items()]
+    return ":root, .biosite-canvas-root {\n" + "\n".join(regras) + "\n}"
 
 
 def renderizar_pagina(pagina: PaginaSite, modo_editor: bool = False) -> SafeString:

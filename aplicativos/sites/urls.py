@@ -43,6 +43,12 @@ from .views_estrutura import (
     SecaoDuplicarView,
     SecaoExcluirView,
 )
+from .views_templates import (
+    EditorBlocoInserirView,
+    EditorBlocosListarView,
+    EditorSecaoSalvarBlocoView,
+    TemplateSalvarComoView,
+)
 
 urlpatterns = [
     path("", WorkspaceSitesView.as_view(), name="sites"),
@@ -52,9 +58,29 @@ urlpatterns = [
     path("<uuid:uuid>/duplicar/", ProjetoSiteDuplicarView.as_view(), name="site_duplicar"),
     path("<uuid:uuid>/arquivar/", ProjetoSiteArquivarView.as_view(), name="site_arquivar"),
     path("<uuid:uuid>/restaurar/", ProjetoSiteRestaurarView.as_view(), name="site_restaurar"),
+    path(
+        "<uuid:uuid>/salvar-template/",
+        TemplateSalvarComoView.as_view(),
+        name="site_salvar_template",
+    ),
     # Editor Visual Mobile-First e Preview (Prompt 5 & 6)
     path("<uuid:uuid>/editor/", EditorStudioView.as_view(), name="site_editor"),
     path("<uuid:uuid>/editor/dados/", EditorDadosJsonView.as_view(), name="site_editor_dados"),
+    path(
+        "<uuid:uuid>/editor/blocos/listar/",
+        EditorBlocosListarView.as_view(),
+        name="site_editor_blocos_listar",
+    ),
+    path(
+        "<uuid:uuid>/editor/bloco/inserir/",
+        EditorBlocoInserirView.as_view(),
+        name="site_editor_bloco_inserir",
+    ),
+    path(
+        "<uuid:uuid>/editor/secao/<int:secao_id>/salvar-bloco/",
+        EditorSecaoSalvarBlocoView.as_view(),
+        name="site_editor_secao_salvar_bloco",
+    ),
     path(
         "<uuid:uuid>/editor/design/salvar/",
         EditorVisualConfigSalvarView.as_view(),

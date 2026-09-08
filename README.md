@@ -424,7 +424,58 @@ O registro centralizado (`aplicativos/sites/elementos/`) foi ampliado com compon
 
 ---
 
-## 13. Qualidade de Código e Lint
+## 13. Templates, Blocos Reutilizáveis e Criação Rápida de BioSites (Prompt 7)
+
+O Prompt 7 introduz um ecossistema completo de **Templates de Sites** e **Blocos Reutilizáveis** baseado em snapshots estruturais versionados em `JSONField`, acelerando a produção comercial de BioSites sem duplicar tabelas relacionais nem gerar acoplamentos em tempo de execução.
+
+### 13.1 Arquitetura de Snapshots Versionados
+- **Modelos de Blueprints:**
+  - `TemplateSite`: Snapshot estrutural completo (`configuracao_visual` e árvore recursiva de `paginas`, `secoes`, `containers` e `elementos`).
+  - `BlocoReutilizavel`: Snapshot de seção individual (`containers` e `elementos`).
+- **Validação Rigorosa (`SCHEMA_VERSION = 1`):** Validador estrutural em `aplicativos/sites/validadores_templates.py` que audita integridade de chaves, existência dos elementos no catálogo de `RegistroElementos`, payloads e URLs perigosas (`javascript:`, etc.).
+- **Clonagem Profunda Atômica (`servicos_templates.py`):**
+  - `instanciar_template()` e `instanciar_bloco()` geram novas árvores com IDs e UUIDs próprios e status `RASCUNHO`.
+  - Transações atômicas garantem rollback total caso ocorra qualquer inconsistência.
+  - Independência total: mutações no projeto derivado não afetam o template e vice-versa.
+- **Sanitização de Dados Privados:** Ao salvar projetos como modelos ou seções como blocos (`substituir_placeholders=True`), nomes pessoais, telefones, números de WhatsApp reais e credenciais são substituídos por dados genéricos profissionais.
+
+### 13.2 Catálogo Inicial do Sistema
+- **8 Templates Padrão:**
+  1. *BioSite Minimal:* Limpo, tipografia forte e espaçamento generoso.
+  2. *BioSite Premium:* Dark mode com efeitos glow e cards sofisticados.
+  3. *Cartão Digital NFC:* Layout vertical focado em toque rápido e contatos diretos.
+  4. *Profissional Moderno:* Focado em médicos, consultores e advogados com CTA e agendamento.
+  5. *Profissional Elegante:* Estilo editorial com fontes serifadas e tons neutros.
+  6. *Empresa Compacta:* Apresentação institucional ágil com serviços e localização.
+  7. *Portfólio Visual:* Focado em criativos e fotógrafos com galerias em grade e carrossel.
+  8. *Restaurante & Comércio:* Destaques de cardápio, horários e pedidos via WhatsApp.
+- **15 Blocos Reutilizáveis:** Hero Minimal, Hero com Banner, Hero Escuro Glow, Perfil Central, CTA WhatsApp, Links Rápidos, Barra de Redes Sociais, Serviços em Cards, Serviços Compactos, Galeria em Grade, Galeria Horizontal (Carrossel), Agendamento Externo, Localização / Mapa, Contato Direto e Rodapé Minimalista.
+
+### 13.3 Motor de Renderização de Snapshots em Memória
+- `RenderizadorBioSite.renderizar_snapshot()`: Renderiza o HTML e CSS Tokens de um template em tempo real **sem gravar nada no banco de dados**, com altíssima performance para pré-visualização.
+
+### 13.4 Interfaces de Usuário
+- **Biblioteca de Templates (`/painel/templates/`):** Listagem com busca, filtros por origem (Sistema vs Meus Modelos) e categoria, cards visuais e ações (Visualizar, Usar Modelo, Duplicar, Arquivar, Excluir).
+- **Preview 390px Mobile-First (`/painel/templates/<uuid>/preview/`):** Visualização realista com moldura de smartphone, alternador de largura de tela e botão "Usar este modelo".
+- **Fluxo "Novo Site" Modernizado (`/painel/sites/novo/`):** Seletor de ponto de partida com card "[ Em branco ]" e cards dos modelos. Ao submeter com modelo selecionado, instancia o projeto e redireciona direto para o editor visual.
+- **Integração no Estúdio (`/painel/sites/<uuid>/editor/`):**
+  - Aba **BLOCOS** na sidebar esquerda para inserção rápida de seções prontas.
+  - Botão **Salvar como Modelo** na topbar do editor.
+  - Botão **Salvar como Bloco** (`💾`) no cabeçalho de cada seção do canvas.
+
+### 13.5 Comandos de Gerenciamento
+- Carga inicial e sincronização idempotente:
+  ```bash
+  python manage.py carregar_templates_sistema
+  ```
+- Auditoria estrutural de todos os modelos e blocos:
+  ```bash
+  python manage.py validar_templates
+  ```
+
+---
+
+## 14. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -443,19 +494,20 @@ python manage.py test --settings=configuracao.settings.teste
 
 ---
 
-## 14. Próximas Etapas (Prompts 7 a 12)
+## 15. Próximas Etapas (Prompts 8 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
 3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional *(Concluído)*
 4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos *(Concluído)*
 5. **Prompt 5:** Editor Visual Mobile-First e Preview *(Concluído)*
-6. **Prompt 6:** Design System, Propriedades Visuais Avançadas e Componentes Premium *(Concluído — 146 testes)*
-7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas
+6. **Prompt 6:** Design System, Propriedades Visuais Avançadas e Componentes Premium *(Concluído)*
+7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas *(Concluído — 174 testes)*
 8. **Prompt 8:** Integração e Redirecionamento NFC
 9. **Prompt 9:** QR Code Dinâmico e Exportação
 10. **Prompt 10:** Analytics e Telemetria de Visitas
 11. **Prompt 11:** Hardening, Performance e Preparação para Produção
 12. **Prompt 12:** Auditoria e Testes Finais
+
 
 

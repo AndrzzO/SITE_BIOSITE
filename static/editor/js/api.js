@@ -113,5 +113,32 @@ export const EditorApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         });
+    },
+
+    async listarBlocos(siteUuid) {
+        return fetchJson(`/painel/sites/${siteUuid}/editor/blocos/listar/`, {
+            method: 'GET'
+        });
+    },
+
+    async inserirBloco(siteUuid, payload) {
+        return fetchJson(`/painel/sites/${siteUuid}/editor/bloco/inserir/`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    },
+
+    async salvarSecaoComoBloco(siteUuid, secaoId, payload) {
+        return fetchJson(`/painel/sites/${siteUuid}/editor/secao/${secaoId}/salvar-bloco/`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    },
+
+    async salvarProjetoComoTemplate(siteUuid, payload) {
+        return fetchJson(`/painel/sites/${siteUuid}/salvar-template/`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
     }
 };

@@ -41,6 +41,9 @@ export class BioSiteEditorStudio {
         this.initAcoesSecoes();
         this.initTrocaPagina();
         this.initCriarPagina();
+        this.initBlocosReutilizaveis();
+        this.initSalvarComoModelo();
+        this.initModalBloco();
     }
 
     initAbasSidebar() {
@@ -67,6 +70,16 @@ export class BioSiteEditorStudio {
             if (btnAddSecao) {
                 const ordemDepois = btnAddSecao.dataset.ordemDepois;
                 await this.criarSecao('Nova Seção', 'NORMAL', ordemDepois);
+                return;
+            }
+
+            // Salvar seção como bloco reutilizável
+            const btnSalvarBloco = e.target.closest('.btn-acao-secao[data-acao="salvar-bloco"]');
+            if (btnSalvarBloco) {
+                const secaoWrapper = btnSalvarBloco.closest('.editor-secao-wrapper');
+                if (secaoWrapper) {
+                    this.abrirModalSalvarBloco(secaoWrapper.dataset.secaoId);
+                }
                 return;
             }
 
@@ -306,5 +319,183 @@ export class BioSiteEditorStudio {
     mostrarStatusErro(msg) {
         console.error('[Editor Studio] Erro:', msg);
         this.autosaveManager?.definirStatus('erro');
+    }
+
+    async initBlocosReutilizaveis() {
+        const grid = document.getElementById('blocos-reutilizaveis-grid');
+        if (!grid) return;
+
+        try {
+            const resp = await EditorApi.listarBlocos(this.siteUuid);
+            if (!resp.blocos || resp.blocos.length === 0) {
+                grid.innerHTML = '<div style="color: var(--studio-text-muted); font-size:0.8125rem; text-align:center; padding: 1rem 0;">Nenhum bloco cadastrado.</div>';
+                return;
+            }
+
+            grid.innerHTML = resp.blocos.map(b => `
+                <div class="bloco-card-item" data-bloco-id="${b.id}" data-bloco-nome="${b.nome}" title="Clique para inserir na página">
+                    <div class="bloco-card-header">
+                        <span class="bloco-card-categoria">${b.categoria_label || b.categoria}</span>
+                        <span class="bloco-card-badge">${b.origem === 'sistema' ? 'Sistema' : 'Personalizado'}</span>
+                    </div>
+                    <span class="bloco-card-nome">${b.nome}</span>
+                    <span class="bloco-card-desc">${b.descricao || 'Seção pré-configurada pronta para uso.'}</span>
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.bloco-card-item').forEach(card => {
+                card.addEventListener('click', async () => {
+                    const blocoId = card.dataset.blocoId;
+                    await this.inserirBloco(blocoId);
+                });
+            });
+        } catch (err) {
+            grid.innerHTML = `<div style="color: var(--studio-danger); font-size:0.8125rem;">Erro ao carregar blocos: ${err.message}</div>`;
+        }
+    }
+
+    async inserirBloco(blocoId) {
+        try {
+            this.mostrarStatusSalvando();
+            const resp = await EditorApi.inserirBloco(this.siteUuid, {
+                bloco_id: blocoId,
+                pagina_id: this.paginaId
+            });
+
+            const secoesContainer = document.getElementById('editor-secoes-container');
+            if (secoesContainer) {
+                const avisoVazio = secoesContainer.querySelector('.editor-pagina-vazia');
+                if (avisoVazio) avisoVazio.remove();
+
+                secoesContainer.insertAdjacentHTML('beforeend', resp.html);
+            }
+
+            this.dragdropManager.init();
+            this.mostrarStatusSalvo();
+        } catch (err) {
+            this.mostrarStatusErro(err.message);
+            alert(`Não foi possível inserir o bloco: ${err.message}`);
+        }
+    }
+
+    abrirModalSalvarBloco(secaoId) {
+        const modal = document.getElementById('modal-salvar-bloco');
+        const inputId = document.getElementById('bloco-modal-secao-id');
+        const inputNome = document.getElementById('bloco-modal-nome');
+        const secaoEl = document.querySelector(`.editor-secao-wrapper[data-secao-id="${secaoId}"]`);
+
+        if (!modal || !inputId || !inputNome) return;
+
+        inputId.value = secaoId;
+        const nomeAtual = secaoEl?.querySelector('.editor-secao-nome')?.textContent?.trim() || '';
+        inputNome.value = nomeAtual ? `Bloco - ${nomeAtual}` : 'Novo Bloco Reutilizável';
+
+        modal.style.display = 'flex';
+    }
+
+    initModalBloco() {
+        const modal = document.getElementById('modal-salvar-bloco');
+        if (!modal) return;
+
+        modal.querySelectorAll('[data-fechar-modal]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        });
+
+        const btnConfirmar = document.getElementById('btn-confirmar-salvar-bloco');
+        if (btnConfirmar) {
+            btnConfirmar.addEventListener('click', async () => {
+                const secaoId = document.getElementById('bloco-modal-secao-id')?.value;
+                const nome = document.getElementById('bloco-modal-nome')?.value?.trim();
+                const categoria = document.getElementById('bloco-modal-categoria')?.value;
+                const descricao = document.getElementById('bloco-modal-descricao')?.value?.trim();
+                const sanitizar = document.getElementById('bloco-modal-sanitizar')?.checked;
+
+                if (!nome) {
+                    alert('Informe um nome para o bloco.');
+                    return;
+                }
+
+                try {
+                    btnConfirmar.disabled = true;
+                    btnConfirmar.textContent = 'Salvando...';
+
+                    const resp = await EditorApi.salvarSecaoComoBloco(this.siteUuid, secaoId, {
+                        nome,
+                        categoria,
+                        descricao,
+                        substituir_placeholders: sanitizar
+                    });
+
+                    modal.style.display = 'none';
+                    alert(`Bloco "${resp.nome}" salvo com sucesso em Meus Blocos!`);
+                    await this.initBlocosReutilizaveis();
+                } catch (err) {
+                    alert(`Erro ao salvar bloco: ${err.message}`);
+                } finally {
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.textContent = 'Salvar Bloco';
+                }
+            });
+        }
+    }
+
+    initSalvarComoModelo() {
+        const btnAbrir = document.getElementById('btn-salvar-template');
+        const modal = document.getElementById('modal-salvar-template');
+        if (!btnAbrir || !modal) return;
+
+        btnAbrir.addEventListener('click', () => {
+            const inputNome = document.getElementById('template-modal-nome');
+            const tituloSite = document.querySelector('.studio-projeto-titulo')?.textContent?.trim() || '';
+            if (inputNome && !inputNome.value) {
+                inputNome.value = tituloSite ? `Modelo - ${tituloSite}` : 'Novo Modelo';
+            }
+            modal.style.display = 'flex';
+        });
+
+        modal.querySelectorAll('[data-fechar-modal]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        });
+
+        const btnConfirmar = document.getElementById('btn-confirmar-salvar-template');
+        if (btnConfirmar) {
+            btnConfirmar.addEventListener('click', async () => {
+                const nome = document.getElementById('template-modal-nome')?.value?.trim();
+                const categoria = document.getElementById('template-modal-categoria')?.value;
+                const descricao = document.getElementById('template-modal-descricao')?.value?.trim();
+                const sanitizar = document.getElementById('template-modal-sanitizar')?.checked;
+
+                if (!nome) {
+                    alert('Informe um nome para o modelo.');
+                    return;
+                }
+
+                try {
+                    btnConfirmar.disabled = true;
+                    btnConfirmar.textContent = 'Salvando...';
+
+                    const resp = await EditorApi.salvarProjetoComoTemplate(this.siteUuid, {
+                        nome,
+                        categoria,
+                        descricao,
+                        substituir_placeholders: sanitizar
+                    });
+
+                    modal.style.display = 'none';
+                    if (confirm(`Modelo "${resp.nome}" criado com sucesso!\n\nDeseja abrir a Biblioteca de Templates agora?`)) {
+                        window.location.href = resp.url_biblioteca;
+                    }
+                } catch (err) {
+                    alert(`Erro ao salvar modelo: ${err.message}`);
+                } finally {
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.textContent = 'Salvar Modelo';
+                }
+            });
+        }
     }
 }
