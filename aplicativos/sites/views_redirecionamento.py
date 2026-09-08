@@ -12,6 +12,8 @@ from django.http import (
 )
 from django.views import View
 
+from .models import EventoAnalitico, LinkInteligente
+from .servicos_analytics import registrar_evento
 from .servicos_links import resolver_link_inteligente
 
 logger = logging.getLogger("aplicativos.sites.views_redirecionamento")
@@ -54,6 +56,29 @@ class RedirectSmartLinkView(View):
             )
             resp_erro["X-Robots-Tag"] = "noindex, nofollow"
             return resp_erro
+
+        # 6. Registro analítico first-party e fail-open (Prompt 11)
+        try:
+            if link.tipo == LinkInteligente.Tipo.NFC or self.tipo_esperado == "nfc":
+                tipo_evt = EventoAnalitico.TipoEvento.SMARTLINK_NFC
+                origem_evt = EventoAnalitico.OrigemAcesso.NFC
+            else:
+                tipo_evt = EventoAnalitico.TipoEvento.SMARTLINK_QR
+                origem_evt = EventoAnalitico.OrigemAcesso.QR
+
+            registrar_evento(
+                projeto=link.projeto,
+                tipo_evento=tipo_evt,
+                origem=origem_evt,
+                link_inteligente=link,
+                request=request,
+            )
+        except Exception as err:
+            logger.error(
+                "Falha não-crítica ao registrar evento analítico para o smart link %s: %s",
+                token,
+                err,
+            )
 
         # Redirecionamento HTTP 302 temporário
         response = HttpResponseRedirect(url_destino)

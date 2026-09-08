@@ -103,8 +103,27 @@ class PublicSiteView(View):
             return response
 
         # 4. Renderização do Snapshot em Memória com RenderizadorBioSite Compartilhado
+        from .servicos_analytics import gerar_token_clique, gerar_token_pageview
+
+        token_pageview = gerar_token_pageview(projeto.id, publicacao.id, pagina_slug=pagina_slug)
+
+        def _gerador_clique(tipo_comp, elem_id, subitem_id=None):
+            return gerar_token_clique(
+                projeto.id,
+                publicacao.id,
+                tipo_comp,
+                elem_id,
+                subitem_id=subitem_id,
+            )
+
+        contexto_render = {
+            "gerar_token_clique": _gerador_clique,
+        }
+
         renderer = RenderizadorBioSite(modo="publico")
-        html_conteudo = renderer.renderizar_snapshot(publicacao.snapshot, pagina_slug=pagina_slug)
+        html_conteudo = renderer.renderizar_snapshot(
+            publicacao.snapshot, pagina_slug=pagina_slug, contexto=contexto_render
+        )
 
         # 5. Metadados de SEO e Open Graph seguros (independente de Host arbitrário)
         from .servicos_dominios import obter_public_scheme, obter_url_publica_projeto
@@ -132,6 +151,7 @@ class PublicSiteView(View):
             "imagem_og": imagem_og,
             "indexavel": projeto.indexavel,
             "html_conteudo": html_conteudo,
+            "token_pageview": token_pageview,
         }
 
         # 6. Renderiza Template Público Puro

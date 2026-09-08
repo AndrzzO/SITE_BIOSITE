@@ -12,6 +12,15 @@ urlpatterns = [
     path("painel/", include("aplicativos.administracao.urls", namespace="painel")),
     # Rota de monitoramento operacional de saúde (Health Check)
     path("health/", include("aplicativos.core.urls_health", namespace="health")),
+    # Ingestão First-Party de Eventos Analíticos (Prompt 11)
+    path(
+        "e/",
+        include(
+            [
+                path("", include("aplicativos.sites.urls_ingestao")),
+            ]
+        ),
+    ),
     # BioSites Públicos (Prompt 8)
     path("b/", include("aplicativos.sites.urls_publicas", namespace="publico")),
     # Redirector Central de Links Inteligentes, Tags NFC e QR Code (Prompt 10)

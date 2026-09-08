@@ -94,5 +94,15 @@
     <main class="biosite-publico-wrapper" role="main">
         {{ html_conteudo|safe }}
     </main>
+
+    {% if token_pageview %}
+    <script>
+        window.__BIO_ANALYTICS__ = {
+            endpoint: "/e/",
+            pageviewToken: "{{ token_pageview }}"
+        };
+    </script>
+    <script src="{% static 'sites/js/site-analytics.js' %}" defer></script>
+    {% endif %}
 </body>
 </html>

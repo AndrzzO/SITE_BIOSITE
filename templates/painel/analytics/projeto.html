@@ -1,0 +1,329 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Analytics — {{ site.nome }}{% endblock %}
+
+{% block content %}
+<!-- Topo do BioSite -->
+<div class="workspace-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <a href="{% url 'painel:site_detalhe' site.uuid %}" style="color: #64748b; text-decoration: none; font-size: 0.9rem;">&larr; Voltar para Detalhes do Site</a>
+        </div>
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0;">
+            📊 Analytics: {{ site.nome }}
+        </h1>
+        <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+            Desempenho de visualizações, leituras NFC, QR Code e cliques em botões de ação deste BioSite.
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        {% if site.esta_publicado %}
+            <a href="{{ site.obter_url_publica }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span>🌐</span> Abrir BioSite
+            </a>
+        {% endif %}
+        <div class="btn-group" style="display: inline-flex; background: #e2e8f0; padding: 0.25rem; border-radius: 8px;">
+            <a href="?periodo=hoje{% if versao_selecionada %}&versao={{ versao_selecionada }}{% endif %}" class="btn btn-sm {% if periodo_atual == 'hoje' %}btn-primary{% else %}btn-secondary{% endif %}" style="border: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Hoje</a>
+            <a href="?periodo=7d{% if versao_selecionada %}&versao={{ versao_selecionada }}{% endif %}" class="btn btn-sm {% if periodo_atual == '7d' %}btn-primary{% else %}btn-secondary{% endif %}" style="border: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;">7 dias</a>
+            <a href="?periodo=30d{% if versao_selecionada %}&versao={{ versao_selecionada }}{% endif %}" class="btn btn-sm {% if periodo_atual == '30d' %}btn-primary{% else %}btn-secondary{% endif %}" style="border: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;">30 dias</a>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de Filtros: Período Customizado e Versão da Publicação -->
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="font-size: 0.9rem; color: #475569;">
+        📅 Período ativo: <strong style="color: #0f172a;">{{ metricas.periodo_rotulo }}</strong>
+        {% if versao_selecionada %}
+            &bull; Versão: <strong style="color: #2563eb;">v{{ versao_selecionada }}</strong>
+        {% endif %}
+    </div>
+
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; margin: 0; flex-wrap: wrap;">
+        <input type="hidden" name="periodo" value="custom">
+
+        <!-- Filtro por Versão de Publicação (Prompt 11 #181) -->
+        {% if versoes_disponiveis %}
+        <label style="font-size: 0.85rem; color: #64748b; margin-right: 0.5rem;">Versão:
+            <select name="versao" style="padding: 0.35rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" onchange="this.form.submit()">
+                <option value="">Todas as versões</option>
+                {% for v in versoes_disponiveis %}
+                    <option value="{{ v.numero_versao }}" {% if versao_selecionada == v.numero_versao %}selected{% endif %}>
+                        v{{ v.numero_versao }} ({{ v.publicado_em|date:"d/m/Y" }})
+                    </option>
+                {% endfor %}
+            </select>
+        </label>
+        {% endif %}
+
+        <label style="font-size: 0.85rem; color: #64748b;">De:
+            <input type="date" name="data_inicio" value="{{ data_inicio_atual }}" style="padding: 0.35rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
+        </label>
+        <label style="font-size: 0.85rem; color: #64748b;">Até:
+            <input type="date" name="data_fim" value="{{ data_fim_atual }}" style="padding: 0.35rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
+        </label>
+        <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">Filtrar</button>
+    </form>
+</div>
+
+<!-- Cards de Métricas Principais -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <!-- Visualizações -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.25rem;">
+            Visualizações
+        </div>
+        <div style="font-size: 1.85rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">
+            {{ metricas.visualizacoes }}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b;">
+            Carregamentos da página
+        </div>
+    </div>
+
+    <!-- Acessos NFC -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.25rem;">
+            Acessos NFC
+        </div>
+        <div style="font-size: 1.85rem; font-weight: 700; color: #2563eb; margin-bottom: 0.25rem;">
+            {{ metricas.acessos_nfc }}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b;">
+            Cartões e tags físicas
+        </div>
+    </div>
+
+    <!-- Acessos QR Code -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.25rem;">
+            Acessos QR Code
+        </div>
+        <div style="font-size: 1.85rem; font-weight: 700; color: #0284c7; margin-bottom: 0.25rem;">
+            {{ metricas.acessos_qr }}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b;">
+            Leituras de QR Code impresso
+        </div>
+    </div>
+
+    <!-- Cliques Totais -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.25rem;">
+            Cliques Totais
+        </div>
+        <div style="font-size: 1.85rem; font-weight: 700; color: #16a34a; margin-bottom: 0.25rem;">
+            {{ metricas.cliques_totais }}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b;">
+            CTR Aprox.: <strong>{{ metricas.ctr_aproximado }}%</strong>
+        </div>
+    </div>
+
+    <!-- Cliques WhatsApp -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.25rem;">
+            Cliques WhatsApp
+        </div>
+        <div style="font-size: 1.85rem; font-weight: 700; color: #15803d; margin-bottom: 0.25rem;">
+            {{ metricas.cliques_whatsapp }}
+        </div>
+        <div style="font-size: 0.75rem; color: #64748b;">
+            Taxa WhatsApp: <strong>{{ metricas.ctr_whatsapp }}%</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico Temporal de Visualizações e Cliques -->
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0;">
+            📈 Evolução Temporal (Visualizações vs. Cliques)
+        </h3>
+        <div style="display: flex; align-items: center; gap: 1.25rem; font-size: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <span style="display: inline-block; width: 12px; height: 12px; background: #2563eb; border-radius: 3px;"></span>
+                <span style="color: #475569;">Visualizações</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <span style="display: inline-block; width: 12px; height: 12px; background: #16a34a; border-radius: 3px;"></span>
+                <span style="color: #475569;">Cliques em CTAs</span>
+            </div>
+        </div>
+    </div>
+
+    {% if serie_temporal %}
+        <!-- Gráfico em Barras SVG Puro e Responsivo -->
+        <div style="overflow-x: auto; padding-bottom: 0.5rem;">
+            <div style="min-width: 600px; height: 220px; display: flex; align-items: flex-end; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-top: 20px;">
+                {% for ponto in serie_temporal %}
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="{{ ponto.rotulo }}: {{ ponto.visualizacoes }} visualizações, {{ ponto.cliques }} cliques">
+                        <div style="display: flex; align-items: flex-end; gap: 2px; height: 160px; width: 100%; justify-content: center;">
+                            <!-- Barra Visualizações -->
+                            <div style="background: #2563eb; width: 45%; max-width: 24px; border-radius: 3px 3px 0 0; min-height: {% if ponto.visualizacoes > 0 %}4px{% else %}1px{% endif %}; height: {% widthratio ponto.visualizacoes 100 160 %}px; transition: height 0.3s ease;"></div>
+                            <!-- Barra Cliques -->
+                            <div style="background: #16a34a; width: 45%; max-width: 24px; border-radius: 3px 3px 0 0; min-height: {% if ponto.cliques > 0 %}4px{% else %}0px{% endif %}; height: {% widthratio ponto.cliques 100 160 %}px; transition: height 0.3s ease;"></div>
+                        </div>
+                        <span style="font-size: 0.7rem; color: #64748b; margin-top: 0.5rem; transform: rotate(-30deg); white-space: nowrap;">
+                            {{ ponto.rotulo }}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 2.5rem; color: #94a3b8; font-size: 0.9rem;">
+            Ainda não há dados suficientes para exibir o gráfico temporal.
+        </div>
+    {% endif %}
+</div>
+
+<!-- Seção Dupla: Origens de Acesso e Top Componentes -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Origens de Acesso -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🌐</span> Origem dos Acessos
+        </h3>
+
+        {% if origens.total > 0 %}
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- NFC -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.25rem;">
+                        <span style="color: #0f172a; font-weight: 500;">💳 Tag NFC Física</span>
+                        <span style="color: #64748b;">{{ origens.nfc }} acessos (<strong>{{ origens.nfc_pct }}%</strong>)</span>
+                    </div>
+                    <div style="background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #2563eb; height: 100%; width: {{ origens.nfc_pct }}%;"></div>
+                    </div>
+                </div>
+
+                <!-- QR Code -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.25rem;">
+                        <span style="color: #0f172a; font-weight: 500;">📱 QR Code Impresso</span>
+                        <span style="color: #64748b;">{{ origens.qr }} acessos (<strong>{{ origens.qr_pct }}%</strong>)</span>
+                    </div>
+                    <div style="background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #0284c7; height: 100%; width: {{ origens.qr_pct }}%;"></div>
+                    </div>
+                </div>
+
+                <!-- Direto -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.25rem;">
+                        <span style="color: #0f172a; font-weight: 500;">🔗 Direto / Web</span>
+                        <span style="color: #64748b;">{{ origens.direto }} visualizações (<strong>{{ origens.direto_pct }}%</strong>)</span>
+                    </div>
+                    <div style="background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #64748b; height: 100%; width: {{ origens.direto_pct }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                Ainda não há dados suficientes de origem no período.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Top Componentes Rastreáveis -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎯</span> Ações Mais Clicadas (Ranking de CTAs)
+        </h3>
+
+        {% if top_componentes %}
+            <table class="workspace-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.85rem;">
+                        <th style="padding: 0.5rem;">Componente</th>
+                        <th style="padding: 0.5rem; text-align: right;">Cliques</th>
+                        <th style="padding: 0.5rem; text-align: right;">Taxa de Clique</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in top_componentes %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.65rem 0.5rem; font-weight: 500; color: #0f172a;">
+                                {{ comp.rotulo }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right; font-weight: 600; color: #16a34a;">
+                                {{ comp.total }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right; color: #64748b;">
+                                {{ comp.taxa_aproximada }}%
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                Nenhum clique registrado em componentes no período.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Desempenho por Mídia Física (Tags NFC e QR Codes Individuais) -->
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+        <span>📱</span> Desempenho por Tag Física / QR Code Individual
+    </h3>
+
+    {% if smart_links %}
+        <table class="workspace-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.85rem;">
+                    <th style="padding: 0.5rem;">Nome da Tag / Impresso</th>
+                    <th style="padding: 0.5rem;">Tipo</th>
+                    <th style="padding: 0.5rem;">Mídia</th>
+                    <th style="padding: 0.5rem;">Token</th>
+                    <th style="padding: 0.5rem; text-align: right;">Total de Acessos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lk in smart_links %}
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 0.65rem 0.5rem; font-weight: 500; color: #0f172a;">
+                            {{ lk.nome }}
+                        </td>
+                        <td style="padding: 0.65rem 0.5rem;">
+                            <span class="badge {% if lk.tipo == 'nfc' %}badge-nfc{% else %}badge-qr{% endif %}" style="font-size: 0.75rem;">
+                                {{ lk.tipo_display }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.65rem 0.5rem; color: #64748b; font-size: 0.85rem;">
+                            {{ lk.tipo_midia }}
+                        </td>
+                        <td style="padding: 0.65rem 0.5rem; font-family: monospace; font-size: 0.8rem; color: #475569;">
+                            {{ lk.token_mascarado }}
+                        </td>
+                        <td style="padding: 0.65rem 0.5rem; text-align: right; font-weight: 700; color: #2563eb;">
+                            {{ lk.total_acessos }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+            Nenhum link inteligente (NFC ou QR Code) vinculado a este BioSite.
+        </div>
+    {% endif %}
+</div>
+
+<!-- Rodapé Explicativo de Semântica e Privacidade -->
+<div style="padding: 1.25rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; color: #64748b; line-height: 1.5;">
+    <strong>ℹ️ Sobre a Interpretação das Métricas:</strong>
+    <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
+        <li><em>Visualizações:</em> Representam o número de vezes que a página foi carregada e o script de analytics registrou o evento. Não equivale a contagem de pessoas únicas.</li>
+        <li><em>Acessos NFC:</em> Contabilizam o número de acessos realizados via link da tag NFC. Não constituem prova física isolada de aproximação de chip.</li>
+        <li><em>Cliques em WhatsApp / Agendamento:</em> Registram o acionamento do link externo. Não garantem que uma mensagem foi de fato enviada ou que um agendamento foi concluído.</li>
+        <li><em>Privacidade:</em> O sistema é 100% first-party, sem cookies de terceiros, sem fingerprinting e sem persistência de endereços IP de visitantes.</li>
+    </ul>
+</div>
+{% endblock %}

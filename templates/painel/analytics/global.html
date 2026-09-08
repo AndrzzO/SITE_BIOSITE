@@ -1,0 +1,254 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Analytics Global — Painel Administrativo{% endblock %}
+
+{% block content %}
+<div class="workspace-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0;">
+            📊 Analytics Global
+        </h1>
+        <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+            Métricas first-party consolidadas de visualizações, acessos físicos (NFC / QR) e cliques em toda a plataforma.
+        </p>
+    </div>
+
+    <!-- Filtro de Período -->
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div class="btn-group" style="display: inline-flex; background: #e2e8f0; padding: 0.25rem; border-radius: 8px;">
+            <a href="?periodo=hoje" class="btn btn-sm {% if periodo_atual == 'hoje' %}btn-primary{% else %}btn-secondary{% endif %}" style="border: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Hoje</a>
+            <a href="?periodo=7d" class="btn btn-sm {% if periodo_atual == '7d' %}btn-primary{% else %}btn-secondary{% endif %}" style="border: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;">7 dias</a>
+            <a href="?periodo=30d" class="btn btn-sm {% if periodo_atual == '30d' %}btn-primary{% else %}btn-secondary{% endif %}" style="border: none; padding: 0.4rem 0.8rem; font-size: 0.85rem;">30 dias</a>
+        </div>
+    </div>
+</div>
+
+<!-- Filtro Customizado de Datas (Colapsável / Secundário) -->
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div style="font-size: 0.9rem; color: #475569; font-weight: 500;">
+        📅 Período ativo: <span style="color: #0f172a; font-weight: 600;">{{ metricas.periodo_rotulo }}</span>
+    </div>
+    <form method="get" style="display: flex; align-items: center; gap: 0.5rem; margin: 0; flex-wrap: wrap;">
+        <input type="hidden" name="periodo" value="custom">
+        <label style="font-size: 0.85rem; color: #64748b;">De:
+            <input type="date" name="data_inicio" value="{{ data_inicio_atual }}" style="padding: 0.35rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
+        </label>
+        <label style="font-size: 0.85rem; color: #64748b;">Até:
+            <input type="date" name="data_fim" value="{{ data_fim_atual }}" style="padding: 0.35rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
+        </label>
+        <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">Filtrar</button>
+    </form>
+</div>
+
+<!-- Cards de Métricas Principais -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>Visualizações</span>
+            <span title="Páginas carregadas efetivamente por visitantes">👁️</span>
+        </div>
+        <div style="font-size: 2rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem;">
+            {{ metricas.total_visualizacoes }}
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b;">
+            Carregamentos registrados do BioSite
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>Acessos NFC</span>
+            <span title="Acessos via link inteligente gravado em cartão ou tag NFC">💳</span>
+        </div>
+        <div style="font-size: 2rem; font-weight: 700; color: #2563eb; margin-bottom: 0.25rem;">
+            {{ metricas.total_nfc }}
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b;">
+            Redirecionamentos via tags NFC
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>Acessos QR Code</span>
+            <span title="Acessos via leitura de QR Code impresso">📱</span>
+        </div>
+        <div style="font-size: 2rem; font-weight: 700; color: #0284c7; margin-bottom: 0.25rem;">
+            {{ metricas.total_qr }}
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b;">
+            Redirecionamentos via QR Code
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>Cliques em CTAs</span>
+            <span title="Cliques em botões, links, WhatsApp, agendamento e redes sociais">🎯</span>
+        </div>
+        <div style="font-size: 2rem; font-weight: 700; color: #16a34a; margin-bottom: 0.25rem;">
+            {{ metricas.total_cliques }}
+        </div>
+        <div style="font-size: 0.8rem; color: #64748b;">
+            CTR Aproximado: <strong>{{ metricas.ctr_global }}%</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Rankings Globais por BioSite -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+    <!-- Top BioSites por Visualizações -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>👁️</span> BioSites Mais Visualizados
+        </h3>
+        {% if metricas.top_visualizacoes %}
+            <table class="workspace-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.85rem;">
+                        <th style="padding: 0.5rem;">BioSite</th>
+                        <th style="padding: 0.5rem; text-align: right;">Visualizações</th>
+                        <th style="padding: 0.5rem; text-align: right;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metricas.top_visualizacoes %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.65rem 0.5rem; font-weight: 500; color: #0f172a;">
+                                {{ item.projeto__nome }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right; font-weight: 600; color: #2563eb;">
+                                {{ item.total }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right;">
+                                <a href="{% url 'painel:site_analytics' item.projeto__uuid %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">Ver Detalhes</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                Ainda não há dados suficientes no período.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Top BioSites por Acessos NFC -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>💳</span> BioSites com Mais Acessos NFC
+        </h3>
+        {% if metricas.top_nfc %}
+            <table class="workspace-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.85rem;">
+                        <th style="padding: 0.5rem;">BioSite</th>
+                        <th style="padding: 0.5rem; text-align: right;">Acessos NFC</th>
+                        <th style="padding: 0.5rem; text-align: right;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metricas.top_nfc %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.65rem 0.5rem; font-weight: 500; color: #0f172a;">
+                                {{ item.projeto__nome }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right; font-weight: 600; color: #2563eb;">
+                                {{ item.total }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right;">
+                                <a href="{% url 'painel:site_analytics' item.projeto__uuid %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">Ver Detalhes</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                Nenhum acesso NFC registrado no período.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Top BioSites por QR Code -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📱</span> BioSites com Mais Acessos QR Code
+        </h3>
+        {% if metricas.top_qr %}
+            <table class="workspace-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.85rem;">
+                        <th style="padding: 0.5rem;">BioSite</th>
+                        <th style="padding: 0.5rem; text-align: right;">Acessos QR</th>
+                        <th style="padding: 0.5rem; text-align: right;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metricas.top_qr %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.65rem 0.5rem; font-weight: 500; color: #0f172a;">
+                                {{ item.projeto__nome }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right; font-weight: 600; color: #0284c7;">
+                                {{ item.total }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right;">
+                                <a href="{% url 'painel:site_analytics' item.projeto__uuid %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">Ver Detalhes</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                Nenhum acesso QR Code registrado no período.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Top BioSites por Cliques em CTAs -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎯</span> BioSites com Maior Interação (Cliques)
+        </h3>
+        {% if metricas.top_cliques %}
+            <table class="workspace-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.85rem;">
+                        <th style="padding: 0.5rem;">BioSite</th>
+                        <th style="padding: 0.5rem; text-align: right;">Total Cliques</th>
+                        <th style="padding: 0.5rem; text-align: right;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in metricas.top_cliques %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.65rem 0.5rem; font-weight: 500; color: #0f172a;">
+                                {{ item.projeto__nome }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right; font-weight: 600; color: #16a34a;">
+                                {{ item.total }}
+                            </td>
+                            <td style="padding: 0.65rem 0.5rem; text-align: right;">
+                                <a href="{% url 'painel:site_analytics' item.projeto__uuid %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">Ver Detalhes</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                Nenhum clique registrado no período.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top: 2rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; color: #64748b;">
+    <strong>ℹ️ Nota de Privacidade & Métricas:</strong>
+    A plataforma utiliza Analytics First-Party sem cookies de rastreamento e sem armazenamento de endereços IP brutos ou identificadores pessoais.
+    <em>Acessos NFC</em> contabilizam requisições ao redirector do link NFC; <em>Visualizações</em> representam carregamentos confirmados do site.
+</div>
+{% endblock %}

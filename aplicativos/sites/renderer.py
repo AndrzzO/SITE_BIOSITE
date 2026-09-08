@@ -405,7 +405,10 @@ class RenderizadorBioSite:
         )
 
     def renderizar_snapshot(
-        self, snapshot: dict[str, Any], pagina_slug: str | None = None
+        self,
+        snapshot: dict[str, Any],
+        pagina_slug: str | None = None,
+        contexto: dict[str, Any] | None = None,
     ) -> SafeString:
         """Renderiza um snapshot estrutural em memória (Preview Fiel ou Site Público)."""
         config_dict = snapshot.get("configuracao_visual", {})
@@ -433,7 +436,9 @@ class RenderizadorBioSite:
                 pagina_alvo = paginas[0]
 
             for idx_s, s_dict in enumerate(pagina_alvo.get("secoes", [])):
-                secoes_html.append(self.renderizar_snapshot_secao(s_dict, id_secao=idx_s + 1))
+                secoes_html.append(
+                    self.renderizar_snapshot_secao(s_dict, id_secao=idx_s + 1, contexto=contexto)
+                )
 
         modo_classe = "public-mode" if self.modo == "publico" else "preview-mode"
         pagina_id_attr = pagina_alvo.get("slug", "snapshot") if pagina_alvo else "snapshot"
@@ -452,7 +457,10 @@ class RenderizadorBioSite:
         )
 
     def renderizar_snapshot_secao(
-        self, secao_dict: dict[str, Any], id_secao: int = 1
+        self,
+        secao_dict: dict[str, Any],
+        id_secao: int = 1,
+        contexto: dict[str, Any] | None = None,
     ) -> SafeString:
         """Renderiza uma seção de snapshot estrutural em memória."""
         classe_seletor = f"biosite-sec-snap-{id_secao}"
@@ -465,7 +473,9 @@ class RenderizadorBioSite:
         containers_html = []
         for idx_c, c_dict in enumerate(secao_dict.get("containers", [])):
             containers_html.append(
-                self._renderizar_snapshot_container(c_dict, id_container=f"{id_secao}_{idx_c + 1}")
+                self._renderizar_snapshot_container(
+                    c_dict, id_container=f"{id_secao}_{idx_c + 1}", contexto=contexto
+                )
             )
 
         return format_html(
@@ -477,7 +487,10 @@ class RenderizadorBioSite:
         )
 
     def _renderizar_snapshot_container(
-        self, container_dict: dict[str, Any], id_container: str = "1"
+        self,
+        container_dict: dict[str, Any],
+        id_container: str = "1",
+        contexto: dict[str, Any] | None = None,
     ) -> SafeString:
         tipo_layout = container_dict.get("tipo_layout", "stack")
         classe_layout = f"layout-{tipo_layout}"
@@ -504,7 +517,7 @@ class RenderizadorBioSite:
                         "estilos": e_dict.get("estilos", {}),
                     },
                 )()
-                elem_html = definicao.render(elem_fake)
+                elem_html = definicao.render(elem_fake, contexto=contexto)
                 elem_classe = f"biosite-elem-snap-{elem_fake.id}"
                 elem_css = self.converter_estilos_para_css(elem_fake.estilos, f".{elem_classe}")
                 elem_style = (
@@ -523,7 +536,7 @@ class RenderizadorBioSite:
         for idx_f, f_dict in enumerate(container_dict.get("filhos", [])):
             filhos_html.append(
                 self._renderizar_snapshot_container(
-                    f_dict, id_container=f"{id_container}_f{idx_f + 1}"
+                    f_dict, id_container=f"{id_container}_f{idx_f + 1}", contexto=contexto
                 )
             )
 

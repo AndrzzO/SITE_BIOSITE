@@ -11,6 +11,7 @@ from .views import (
     ProjetoSiteUpdateView,
     WorkspaceSitesView,
 )
+from .views_analytics import ProjetoAnalyticsView
 from .views_dominios import (
     AdicionarDominioPersonalizadoView,
     ConfigurarSubdominioView,
@@ -72,6 +73,7 @@ urlpatterns = [
     path("", WorkspaceSitesView.as_view(), name="sites"),
     path("novo/", ProjetoSiteCreateView.as_view(), name="site_novo"),
     path("<uuid:uuid>/", ProjetoSiteDetailView.as_view(), name="site_detalhe"),
+    path("<uuid:uuid>/analytics/", ProjetoAnalyticsView.as_view(), name="site_analytics"),
     path("<uuid:uuid>/editar/", ProjetoSiteUpdateView.as_view(), name="site_editar"),
     path("<uuid:uuid>/duplicar/", ProjetoSiteDuplicarView.as_view(), name="site_duplicar"),
     path("<uuid:uuid>/arquivar/", ProjetoSiteArquivarView.as_view(), name="site_arquivar"),

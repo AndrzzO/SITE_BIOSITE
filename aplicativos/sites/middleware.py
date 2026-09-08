@@ -82,8 +82,8 @@ class HostRoutingMiddleware:
                 )
                 return HttpResponseNotFound("Página não encontrada.")
 
-            # Permite que arquivos estáticos e uploads de mídia passem livremente
-            if caminho.startswith(("/static/", "/media/")):
+            # Permite que arquivos estáticos, uploads de mídia e o endpoint de analytics passem livremente
+            if caminho.startswith(("/static/", "/media/")) or caminho in ("/e/", "/e"):
                 return self.get_response(request)
 
             resultado = resolver_site_por_host(host_norm)

@@ -192,6 +192,9 @@ class ElementoBotao(DefinicaoElemento):
     nome = _("Botão de Ação")
     categoria = _("Ação")
     icone = "🔘"
+    rastreavel = True
+    categoria_analytics = "acao"
+    rotulo_analytics = "Botão"
 
     PROTOCOLOS_PERMITIDOS = frozenset({"http", "https", "mailto", "tel", "whatsapp", "sms"})
     ESTILOS_BOTAO = frozenset({"solido", "outline", "ghost", "glass"})
@@ -256,13 +259,15 @@ class ElementoBotao(DefinicaoElemento):
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
         icone_id = conteudo.get("icone_id")
         svg_icone = obter_svg_icone(icone_id) if icone_id else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" class="elemento-botao biosite-btn btn-{} {}"{}><span>{}</span>{}</a>',
+            '<a href="{}" class="elemento-botao biosite-btn btn-{} {}"{}{}><span>{}</span>{}</a>',
             url,
             estilo_visual,
             largura_total,
             mark_safe(target),
+            mark_safe(token_attr),
             texto,
             svg_icone,
         )
@@ -344,6 +349,9 @@ class ElementoWhatsApp(DefinicaoElemento):
     nome = _("Botão WhatsApp")
     categoria = _("Contato")
     icone = "💬"
+    rastreavel = True
+    categoria_analytics = "contato"
+    rotulo_analytics = "WhatsApp"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -395,23 +403,26 @@ class ElementoWhatsApp(DefinicaoElemento):
         texto = escape(conteudo.get("texto", "Falar no WhatsApp"))
         estilo = conteudo.get("estilo_botao", "solido")
         svg_icone = obter_svg_icone("whatsapp") if conteudo.get("mostrar_icone", True) else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         if estilo == "flutuante":
             return format_html(
-                '<a href="{}" target="_blank" rel="noopener noreferrer" class="biosite-whatsapp-flutuante" aria-label="{}">'
+                '<a href="{}" target="_blank" rel="noopener noreferrer" class="biosite-whatsapp-flutuante" aria-label="{}"{}>'
                 "{}<span>{}</span>"
                 "</a>",
                 url,
                 texto,
+                mark_safe(token_attr),
                 svg_icone,
                 texto,
             )
 
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
         return format_html(
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-whatsapp {}">{}<span>{}</span></a>',
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-whatsapp {}{}">{}<span>{}</span></a>',
             url,
             largura_total,
+            mark_safe(token_attr),
             svg_icone,
             texto,
         )
@@ -423,6 +434,9 @@ class ElementoTelefone(DefinicaoElemento):
     nome = _("Ligar por Telefone")
     categoria = _("Contato")
     icone = "📞"
+    rastreavel = True
+    categoria_analytics = "contato"
+    rotulo_analytics = "Telefone"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -457,11 +471,13 @@ class ElementoTelefone(DefinicaoElemento):
         texto = escape(conteudo.get("texto", "Ligar Agora"))
         svg_icone = obter_svg_icone("telefone") if conteudo.get("mostrar_icone", True) else ""
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="tel:{}" class="elemento-botao biosite-btn btn-telefone {}">{}<span>{}</span></a>',
+            '<a href="tel:{}" class="elemento-botao biosite-btn btn-telefone {}{}">{}<span>{}</span></a>',
             clean_tel,
             largura_total,
+            mark_safe(token_attr),
             svg_icone,
             texto,
         )
@@ -473,6 +489,9 @@ class ElementoEmail(DefinicaoElemento):
     nome = _("Enviar E-mail")
     categoria = _("Contato")
     icone = "✉️"
+    rastreavel = True
+    categoria_analytics = "contato"
+    rotulo_analytics = "E-mail"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -513,11 +532,13 @@ class ElementoEmail(DefinicaoElemento):
             url += f"?subject={assunto}"
         svg_icone = obter_svg_icone("email") if conteudo.get("mostrar_icone", True) else ""
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" class="elemento-botao biosite-btn btn-email {}">{}<span>{}</span></a>',
+            '<a href="{}" class="elemento-botao biosite-btn btn-email {}{}>{}<span>{}</span></a>',
             url,
             largura_total,
+            mark_safe(token_attr),
             svg_icone,
             texto,
         )
@@ -529,6 +550,9 @@ class ElementoWebsite(DefinicaoElemento):
     nome = _("Link do Website")
     categoria = _("Contato")
     icone = "🌐"
+    rastreavel = True
+    categoria_analytics = "acao"
+    rotulo_analytics = "Website"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -562,11 +586,13 @@ class ElementoWebsite(DefinicaoElemento):
         texto = escape(conteudo.get("texto", "Acessar Website"))
         svg_icone = obter_svg_icone("website") if conteudo.get("mostrar_icone", True) else ""
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-website {}">{}<span>{}</span></a>',
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-website {}{}">{}<span>{}</span></a>',
             url,
             largura_total,
+            mark_safe(token_attr),
             svg_icone,
             texto,
         )
@@ -578,6 +604,9 @@ class ElementoRedesSociais(DefinicaoElemento):
     nome = _("Redes Sociais")
     categoria = _("Social")
     icone = "📱"
+    rastreavel = True
+    categoria_analytics = "social"
+    rotulo_analytics = "Redes Sociais"
 
     REDES_SUPORTADAS = frozenset(
         {"instagram", "facebook", "tiktok", "linkedin", "youtube", "twitter_x", "whatsapp"}
@@ -631,13 +660,15 @@ class ElementoRedesSociais(DefinicaoElemento):
             url = escape(item.get("url", "#"))
             rotulo = escape(item.get("rotulo", rede.capitalize()))
             svg = obter_svg_icone(rede)
+            token_attr = self.obter_token_clique(elemento, contexto, subitem_id=rede)
 
             if formato == "botoes":
                 botoes_html.append(
                     format_html(
-                        '<a href="{}" target="_blank" rel="noopener noreferrer" class="social-btn social-btn-full" aria-label="{}">{}<span>{}</span></a>',
+                        '<a href="{}" target="_blank" rel="noopener noreferrer" class="social-btn social-btn-full" aria-label="{}"{}>{}<span>{}</span></a>',
                         url,
                         rotulo,
+                        mark_safe(token_attr),
                         svg,
                         rotulo,
                     )
@@ -645,10 +676,11 @@ class ElementoRedesSociais(DefinicaoElemento):
             else:
                 botoes_html.append(
                     format_html(
-                        '<a href="{}" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="{}" title="{}">{}</a>',
+                        '<a href="{}" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="{}" title="{}"{}>{}</a>',
                         url,
                         rotulo,
                         rotulo,
+                        mark_safe(token_attr),
                         svg,
                     )
                 )
@@ -667,6 +699,9 @@ class ElementoAgendamentoExterno(DefinicaoElemento):
     nome = _("Agendamento Externo")
     categoria = _("Comercial")
     icone = "📅"
+    rastreavel = True
+    categoria_analytics = "agenda"
+    rotulo_analytics = "Agendamento"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -701,13 +736,15 @@ class ElementoAgendamentoExterno(DefinicaoElemento):
         texto = escape(conteudo.get("texto", "Agendar Atendimento"))
         svg_icone = obter_svg_icone("calendario")
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-agendamento {}">'
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-agendamento {}{}>'
             "{}<span>{}</span>"
             "</a>",
             url,
             largura_total,
+            mark_safe(token_attr),
             svg_icone,
             texto,
         )
@@ -719,6 +756,9 @@ class ElementoMapa(DefinicaoElemento):
     nome = _("Localização / Mapa")
     categoria = _("Comercial")
     icone = "📍"
+    rastreavel = True
+    categoria_analytics = "mapa"
+    rotulo_analytics = "Localização"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -760,15 +800,17 @@ class ElementoMapa(DefinicaoElemento):
         texto = escape(conteudo.get("texto", "Como Chegar"))
         svg_icone = obter_svg_icone("mapa")
         largura_total = "btn-full-width" if conteudo.get("largura_total", True) else ""
+        token_attr = self.obter_token_clique(elemento, contexto)
 
         return format_html(
             '<div class="elemento-mapa-wrapper">'
-            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-mapa {}">'
+            '<a href="{}" target="_blank" rel="noopener noreferrer" class="elemento-botao biosite-btn btn-mapa {}{}>'
             "{}<span>{}</span>"
             "</a>"
             "</div>",
             url_mapa,
             largura_total,
+            mark_safe(token_attr),
             svg_icone,
             texto,
         )
@@ -780,6 +822,9 @@ class ElementoServicos(DefinicaoElemento):
     nome = _("Lista de Serviços")
     categoria = _("Comercial")
     icone = "💼"
+    rastreavel = True
+    categoria_analytics = "servico"
+    rotulo_analytics = "Serviços"
 
     def conteudo_padrao(self) -> dict[str, Any]:
         return {
@@ -830,16 +875,19 @@ class ElementoServicos(DefinicaoElemento):
         layout = conteudo.get("layout", "cards")
 
         cards_html = []
-        for s in itens:
+        for idx_s, s in enumerate(itens):
             titulo = escape(s.get("titulo", ""))
             desc = escape(s.get("descricao", ""))
             preco = escape(s.get("preco", ""))
             link = escape(s.get("link_cta", ""))
             txt_cta = escape(s.get("texto_cta", "Solicitar"))
+            token_attr = self.obter_token_clique(
+                elemento, contexto, subitem_id=f"servico_{idx_s + 1}"
+            )
 
             preco_badge = f'<span class="servico-preco">{preco}</span>' if preco else ""
             cta_btn = (
-                f'<a href="{link}" target="_blank" rel="noopener noreferrer" class="servico-cta">{txt_cta}</a>'
+                f'<a href="{link}" target="_blank" rel="noopener noreferrer" class="servico-cta"{token_attr}>{txt_cta}</a>'
                 if link
                 else ""
             )

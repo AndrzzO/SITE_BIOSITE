@@ -1315,3 +1315,124 @@ class HistoricoVinculoTag(ModeloBase):
     def __str__(self) -> str:
         ant = self.projeto_anterior.nome if self.projeto_anterior else "Nenhum"
         return f"{self.link.nome}: {ant} -> {self.projeto_novo.nome}"
+
+
+class EventoAnalitico(models.Model):
+    """
+    Registro analítico first-party, privacy-friendly e mobile-first (Prompt 11).
+
+    REGRAS ARQUITETURAIS:
+    1. Minimidade e Privacidade: Nenhum IP bruto, User-Agent integral, cookie de rastreamento
+       ou dado pessoal (PII) é armazenado.
+    2. Alta Performance: PK numérica eficiente (BigAutoField) e índices otimizados para
+       consultas temporais sem contenção de transações.
+    3. Imutabilidade: Registros de eventos são write-once históricos; não sofrem updates.
+    4. Resolução Estável: Guarda o ProjetoSite e a PublicacaoSite efetivamente ativos no instante
+       em que o evento ocorreu.
+    5. Desacoplamento Físico: Rastreia o acesso de tags NFC e QR Code através do LinkInteligente
+       preservando a atribuição mesmo se o vínculo da tag for reatribuído no futuro.
+    """
+
+    class TipoEvento(models.TextChoices):
+        PAGE_VIEW = "PAGE_VIEW", _("Visualização de Página")
+        SMARTLINK_NFC = "SMARTLINK_NFC", _("Acesso via Link NFC")
+        SMARTLINK_QR = "SMARTLINK_QR", _("Acesso via QR Code")
+        COMPONENT_CLICK = "COMPONENT_CLICK", _("Clique em Componente")
+
+    class OrigemAcesso(models.TextChoices):
+        DIRETO_DESCONHECIDO = "DIRETO_DESCONHECIDO", _("Direto / Não Identificado")
+        NFC = "NFC", _("NFC")
+        QR = "QR", _("QR Code")
+        INTERNO = "INTERNO", _("Navegação Interna")
+
+    id = models.BigAutoField(primary_key=True)
+
+    projeto = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.CASCADE,
+        related_name="eventos_analiticos",
+        verbose_name=_("Projeto"),
+    )
+    publicacao = models.ForeignKey(
+        PublicacaoSite,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="eventos_analiticos",
+        verbose_name=_("Publicação"),
+    )
+    tipo_evento = models.CharField(
+        _("Tipo de Evento"),
+        max_length=32,
+        choices=TipoEvento.choices,
+        db_index=True,
+    )
+    origem = models.CharField(
+        _("Origem"),
+        max_length=32,
+        choices=OrigemAcesso.choices,
+        default=OrigemAcesso.DIRETO_DESCONHECIDO,
+        db_index=True,
+    )
+    pagina_uuid = models.CharField(
+        _("Identificador da Página"),
+        max_length=64,
+        blank=True,
+        null=True,
+        db_index=True,
+    )
+    elemento_uuid = models.CharField(
+        _("Identificador do Elemento"),
+        max_length=64,
+        blank=True,
+        null=True,
+        db_index=True,
+    )
+    tipo_componente = models.CharField(
+        _("Tipo de Componente"),
+        max_length=64,
+        blank=True,
+        null=True,
+        db_index=True,
+    )
+    subitem_id = models.CharField(
+        _("Subitem / Rede / CTA"),
+        max_length=64,
+        blank=True,
+        null=True,
+    )
+    link_inteligente = models.ForeignKey(
+        LinkInteligente,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="eventos_analiticos",
+        verbose_name=_("Link Inteligente"),
+    )
+    ocorrido_em = models.DateTimeField(
+        _("Ocorrido em"),
+        default=timezone.now,
+        db_index=True,
+    )
+    contexto_minimo = models.JSONField(
+        _("Contexto Mínimo"),
+        default=dict,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = _("evento analítico")
+        verbose_name_plural = _("eventos analíticos")
+        ordering = ["-ocorrido_em"]
+        indexes = [
+            models.Index(fields=["projeto", "ocorrido_em"], name="idx_evt_proj_ocorrido"),
+            models.Index(fields=["tipo_evento", "ocorrido_em"], name="idx_evt_tipo_ocorrido"),
+            models.Index(fields=["link_inteligente", "ocorrido_em"], name="idx_evt_link_ocorrido"),
+            models.Index(fields=["elemento_uuid", "ocorrido_em"], name="idx_evt_elem_ocorrido"),
+            models.Index(
+                fields=["projeto", "tipo_evento", "ocorrido_em"], name="idx_evt_proj_tipo_data"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"[{self.get_tipo_evento_display()}] {self.projeto.nome} ({self.ocorrido_em:%d/%m/%Y %H:%M})"

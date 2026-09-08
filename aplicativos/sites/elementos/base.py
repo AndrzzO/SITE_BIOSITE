@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 HEX_COLOR_REGEX = re.compile(r"^#(?:[0-9a-fA-F]{3}){1,2}$")
@@ -25,6 +26,9 @@ class DefinicaoElemento(ABC):
     nome: str
     categoria: str = "Geral"
     icone: str = "📦"
+    rastreavel: bool = False
+    categoria_analytics: str = ""
+    rotulo_analytics: str = ""
 
     PROPRIEDADES_ESTILO_PERMITIDAS = frozenset(
         {
@@ -107,6 +111,25 @@ class DefinicaoElemento(ABC):
     def configuracao_padrao(self) -> dict[str, Any]:
         """Retorna parâmetros adicionais específicos do elemento."""
         return {}
+
+    def obter_token_clique(
+        self,
+        elemento: Any,
+        contexto: dict[str, Any] | None = None,
+        subitem_id: str | None = None,
+    ) -> str:
+        """
+        Retorna o atributo HTML data-event-token se o elemento for rastreável (Prompt 11)
+        e o contexto fornecer a função de assinatura de tokens analíticos.
+        """
+        if not self.rastreavel or not contexto:
+            return ""
+        gerador = contexto.get("gerar_token_clique")
+        if not callable(gerador):
+            return ""
+        elem_id = getattr(elemento, "id", None) or getattr(elemento, "uuid", "")
+        token = gerador(self.identificador.upper(), elem_id, subitem_id)
+        return f' data-event-token="{escape(token)}"' if token else ""
 
     @abstractmethod
     def validar_conteudo(self, conteudo: dict[str, Any]) -> None:

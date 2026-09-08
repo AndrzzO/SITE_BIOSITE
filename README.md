@@ -607,7 +607,69 @@ python manage.py verificar_links_inteligentes
 
 ---
 
-## 17. Qualidade de Código e Lint
+---
+
+## 17. Analytics First-Party, Eventos, Cliques e Métricas (Prompt 11)
+
+Sistema nativo de métricas e telemetria leve, privacy-friendly, mobile-first e otimizado para acessos físicos via NFC e QR Code.
+
+### 17.1 Princípios de Privacidade e Conformidade (LGPD / GDPR)
+- **100% First-Party**: Zero rastreadores externos (sem Google Analytics, GTM, Meta Pixel, Hotjar ou Clarity).
+- **Sem Cookies de Rastreamento**: A ingestão de eventos e a navegação pública operam de forma totalmente cookieless.
+- **Sem Coleta de Dados Pessoais**: Nenhum endereço IP bruto ou User-Agent completo é persistido no banco de dados. O endereço IP é utilizado exclusivamente em memória para gerar um hash HMAC transitório com sal dinâmico (expiração em 60s) para rate limiting.
+- **Sem Fingerprinting**: Proibido qualquer canvas/device fingerprinting ou rastreamento cross-site.
+- **Métricas Honestas e Transparentes**: Terminologia clara e auditável ("Visualizações", "Acessos NFC", "Acessos QR", "Cliques", "CTR Aproximado"), evitando falsas estimativas de "visitantes únicos" ou "pessoas".
+
+### 17.2 Coleta Resiliente e Arquitetura Fail-Open
+- **Script Cliente Ultraleve (`static/sites/js/site-analytics.js`)**:
+  - Código JavaScript vanilla com menos de 1.5 KB e zero dependências.
+  - Carregado com atributo `defer` para não impactar o First Contentful Paint (FCP) ou a renderização mobile.
+  - Envio de métricas em segundo plano via `navigator.sendBeacon` com fallback seguro para `fetch` com flag `keepalive: true`.
+  - Delegação de eventos no `document` para rastrear cliques em CTAs (`data-bio-click`) sem bloquear links nativos, chamadas telefônicas (`tel:`) ou conversas de WhatsApp (`https://wa.me/`).
+- **Assinatura Criptográfica de Tokens**:
+  - Tokens de visualização (`token_pageview`) e de clique (`token_clique`) assinados no servidor via `django.core.signing.TimestampSigner`.
+  - Garante a legitimidade do projeto, publicação, tipo de componente e página, prevenindo falsificação de métricas e injeção de eventos.
+- **Ingestão Otimizada (`/e/`)**:
+  - Endpoint dedicado `AnalyticsIngestionView` isento de CSRF, aceitando exclusivamente POST com payload JSON limitado a 2 KB.
+  - Validação de taxa de requisições por IP (*rate limiting*) e descarte automático de crawlers e robôs (*bot detection*).
+  - Resposta ultrarrápida `HTTP 204 No Content`.
+  - Permissão de acesso preservada no `HostRoutingMiddleware`, viabilizando o envio de beacons sob a mesma origem tanto no domínio da plataforma quanto em domínios personalizados dos clientes.
+- **Fail-Open Absoluto**:
+  - O pipeline de gravação é encapsulado em blocos `try/except`.
+  - O carregamento da página pública e o redirecionamento de tags NFC/QR **nunca são bloqueados** caso ocorra indisponibilidade temporária de banco ou cache.
+
+### 17.3 Modelagem de Dados de Alta Performance (`EventoAnalitico`)
+- Tabela dedicada e desacoplada `EventoAnalitico`:
+  - Chave primária numérica de 64 bits (`BigAutoField`).
+  - Tipo de evento enumerado: `PAGE_VIEW`, `SMARTLINK_NFC`, `SMARTLINK_QR`, `COMPONENT_CLICK`.
+  - Origem do acesso: `DIRETO_DESCONHECIDO`, `NFC`, `QR`, `INTERNO`.
+  - Referências indexadas por `projeto`, `publicacao`, `pagina_uuid`, `elemento_uuid`, `tipo_componente`, `subitem_id` e `link_inteligente`.
+  - Índices compostos estratégicos para relatórios: `(projeto, ocorrido_em)`, `(tipo_evento, ocorrido_em)`, `(link_inteligente, ocorrido_em)`, `(elemento_uuid, ocorrido_em)` e `(projeto, tipo_evento, ocorrido_em)`.
+  - Agregações com cache transitório de 60 segundos para dashboards rápidos e escaláveis.
+
+### 17.4 Dashboards Administrativos e Relatórios
+- **Dashboard Global (`/painel/analytics/`)**:
+  - Acesso exclusivo para administradores com consolidação de métricas da plataforma inteira.
+  - Filtros flexíveis de período: Hoje, Últimos 7 dias, Últimos 30 dias, Últimos 90 dias ou intervalo customizado.
+  - Rankings dos BioSites mais visualizados, com mais acessos NFC, com mais acessos QR e com maior número de cliques.
+- **Dashboard do BioSite (`/painel/sites/<uuid>/analytics/`)**:
+  - Indicadores-chave de desempenho (KPIs): Total de Visualizações, Acessos NFC, Acessos QR Code, Total de Cliques e CTR Aproximado.
+  - Gráfico de evolução temporal responsivo construído em **SVG puro** (sem bibliotecas externas pesadas).
+  - Gráfico de distribuição de origens de tráfego (Direto, NFC, QR, Interno).
+  - Tabela detalhada dos componentes e CTAs com maior volume de interação (WhatsApp, Telefone, Agendamento, Redes Sociais, Mapas, etc.).
+  - Desempenho individualizado de cada Tag NFC e QR Code vinculados ao projeto.
+- **API Interna de Métricas de Links**:
+  - Endpoint JSON `/painel/links/<uuid>/metricas/` para exibição rápida de histórico de acessos por mídia física.
+
+### 17.5 Auditoria de Dados e Conformidade Analítica
+Para auditar a consistência dos eventos analíticos, referências órfãs e conformidade estrita de privacidade:
+```bash
+python manage.py verificar_analytics
+```
+
+---
+
+## 18. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -619,14 +681,14 @@ Para formatar automaticamente o código:
 ruff format .
 ```
 
-Para executar a suíte completa de testes automatizados (252 testes):
+Para executar a suíte completa de testes automatizados (282 testes):
 ```bash
 python manage.py test --settings=configuracao.settings.teste
 ```
 
 ---
 
-## 18. Próximas Etapas (Prompts 11 a 12)
+## 19. Próximas Etapas (Prompts 11 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
@@ -638,8 +700,9 @@ python manage.py test --settings=configuracao.settings.teste
 8. **Prompt 8:** Rascunho, Preview Final, Versionamento, Publicação e Hospedagem *(Concluído — 199 testes)*
 9. **Prompt 9:** Subdomínios, Domínios Personalizados e Resolução Segura de Host *(Concluído — 227 testes)*
 10. **Prompt 10:** NFC, QR Code e Links Inteligentes *(Concluído — 252 testes)*
-11. **Prompt 11:** Hardening, Performance e Telemetria
-12. **Prompt 12:** Auditoria e Entrega Final
+11. **Prompt 11:** Analytics First-Party, Eventos, Cliques e Métricas *(Concluído — 282 testes)*
+12. **Prompt 12:** Hardening, Otimização Final, Produção e Auditoria Geral
+
 
 
 
