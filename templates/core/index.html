@@ -1,6 +1,178 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}BioSite NFC — Fundação Operacional{% endblock %}
+{% block title %}BioSite NFC — Plataforma & Acesso Operacional{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-section {
+        margin-top: 1.75rem;
+        padding-top: 1.75rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .login-section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-main);
+    }
+
+    .login-section-subtitle {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.125rem;
+        text-align: left;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 0.375rem;
+    }
+
+    .form-input {
+        width: 100%;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.625rem 0.875rem;
+        color: var(--text-main);
+        font-size: 0.875rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    .form-input:focus {
+        border-color: var(--accent);
+    }
+
+    .input-password-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .btn-toggle-password {
+        position: absolute;
+        right: 0.75rem;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0.25rem;
+    }
+
+    .btn-toggle-password:hover {
+        color: var(--text-main);
+    }
+
+    .btn-submit {
+        width: 100%;
+        background-color: var(--accent);
+        color: #0f172a;
+        font-weight: 600;
+        padding: 0.75rem 1.25rem;
+        border-radius: 6px;
+        border: none;
+        font-size: 0.9375rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: background-color 0.15s, transform 0.1s;
+        margin-top: 0.5rem;
+    }
+
+    .btn-submit:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-1px);
+    }
+
+    .test-credentials-box {
+        margin-top: 1.25rem;
+        background: rgba(56, 189, 248, 0.08);
+        border: 1px dashed rgba(56, 189, 248, 0.35);
+        border-radius: 8px;
+        padding: 0.875rem 1rem;
+        font-size: 0.8125rem;
+        color: var(--accent);
+        display: flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+    }
+
+    .test-credentials-box .icon {
+        font-size: 1.125rem;
+        line-height: 1;
+    }
+
+    .test-credentials-box strong {
+        color: #ffffff;
+    }
+
+    .alert-danger {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        font-size: 0.8125rem;
+        margin-bottom: 1.125rem;
+    }
+
+    .field-error {
+        color: #f87171;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .authenticated-box {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .auth-user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .auth-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0284c7, #38bdf8);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
+
+    .auth-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -11,9 +183,102 @@
 
     <h1>{{ titulo }}</h1>
     <p>
-        A fundação técnica da plataforma de BioSites com tecnologia NFC foi configurada com sucesso.
-        A arquitetura monólito modular está ativa, segura e pronta para receber as camadas de autenticação e gestão.
+        Plataforma operacional para gestão e publicação de BioSites modernos com suporte integrado a tags NFC, QR Codes inteligentes e domínios personalizados.
     </p>
+
+    {% if request.user.is_authenticated %}
+        <!-- Usuário já autenticado na sessão -->
+        <div class="authenticated-box">
+            <div class="auth-user-info">
+                <div class="auth-avatar">
+                    {{ request.user.username|slice:":2"|upper }}
+                </div>
+                <div>
+                    <div style="font-weight: 600; color: var(--text-main);">
+                        {{ request.user.get_full_name|default:request.user.username }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        Sessão ativa como {% if request.user.is_superuser %}Superadministrador{% elif request.user.is_staff %}Operador Administrativo{% else %}Usuário{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-actions">
+                <a href="{% url 'painel:sites' %}" class="btn" style="flex: 1; text-align: center;">
+                    Acessar Dashboard Operacional &rarr;
+                </a>
+                <form method="post" action="{% url 'painel:logout' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted);">
+                        Sair
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <!-- Formulário de Login Direto na HOME -->
+        <div class="login-section">
+            <div class="login-section-title">Acesso ao Painel Administrativo</div>
+            <div class="login-section-subtitle">Informe suas credenciais para gerenciar clientes, sites e domínios:</div>
+
+            {% if form.non_field_errors %}
+                <div class="alert-danger" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'core:home' %}" novalidate>
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ form.identificador.id_for_label }}" class="form-label">
+                        {{ form.identificador.label }}
+                    </label>
+                    {{ form.identificador }}
+                    {% if form.identificador.errors %}
+                        <div class="field-error">
+                            {{ form.identificador.errors|striptags }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                        {{ form.password.label }}
+                    </label>
+                    <div class="input-password-wrapper">
+                        {{ form.password }}
+                        <button type="button" class="btn-toggle-password" data-target="{{ form.password.id_for_label }}" aria-label="Exibir senha">
+                            Mostrar
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="field-error">
+                            {{ form.password.errors|striptags }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <span>Entrar no Painel</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+            </form>
+
+            <div class="test-credentials-box">
+                <span class="icon">💡</span>
+                <div>
+                    <div><strong>Credenciais de Teste prontas para uso:</strong></div>
+                    <div style="margin-top: 0.25rem;">
+                        Usuário: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #fff;">admin</code> &bull;
+                        Senha: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #fff;">admin</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
     <div class="info-grid">
         <div class="info-item">
@@ -29,9 +294,30 @@
             <div class="info-val">America/Sao_Paulo</div>
         </div>
         <div class="info-item">
-            <div class="info-label">Idioma</div>
-            <div class="info-val">pt-BR</div>
+            <div class="info-label">Painel Privado</div>
+            <div class="info-val">/painel/sites/</div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Toggle de visualização da senha
+        var toggleButtons = document.querySelectorAll(".btn-toggle-password");
+        toggleButtons.forEach(function(button) {
+            button.addEventListener("click", function(e) {
+                e.preventDefault();
+                var targetId = button.getAttribute("data-target");
+                var input = document.getElementById(targetId);
+                if (!input) return;
+                var isPassword = input.getAttribute("type") === "password";
+                input.setAttribute("type", isPassword ? "text" : "password");
+                button.textContent = isPassword ? "Ocultar" : "Mostrar";
+                button.setAttribute("aria-label", isPassword ? "Ocultar senha" : "Exibir senha");
+            });
+        });
+    });
+</script>
 {% endblock %}

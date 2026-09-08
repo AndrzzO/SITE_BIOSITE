@@ -159,8 +159,13 @@
         <a href="{% url 'core:home' %}" class="brand">
             BioSite <span>NFC</span>
         </a>
-        <div>
-            <a href="/health/" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" target="_blank">Health Check</a>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'painel:sites' %}" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Dashboard &rarr;</a>
+            {% else %}
+                <a href="{% url 'painel:login' %}" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Entrar no Painel &rarr;</a>
+            {% endif %}
+            <a href="/health/" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; background: transparent; border: 1px solid var(--border); color: var(--text-muted);" target="_blank">Health Check</a>
         </div>
     </header>
 

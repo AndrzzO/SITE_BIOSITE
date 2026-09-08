@@ -39,17 +39,63 @@ class HealthCheckTests(TestCase):
 
 
 class HomeViewTests(TestCase):
-    """Testes da rota inicial temporária."""
+    """Testes da rota inicial da plataforma e autenticação integrada."""
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        self.admin_user = User.objects.create_superuser(
+            username="admin",
+            email="admin@biosite.com",
+            password="admin",
+        )
 
     def test_home_retorna_status_200(self):
         url = reverse("core:home")
         resposta = self.client.get(url)
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "Plataforma BioSite NFC")
+        self.assertContains(resposta, "Entrar no Painel")
+        self.assertContains(resposta, "admin")
+
+    def test_home_login_sucesso_redireciona_para_workspace(self):
+        url = reverse("core:home")
+        resposta = self.client.post(
+            url,
+            {"identificador": "admin", "password": "admin"},
+        )
+        self.assertRedirects(resposta, reverse("painel:sites"))
+
+    def test_home_login_invalido_exibe_erro(self):
+        url = reverse("core:home")
+        resposta = self.client.post(
+            url,
+            {"identificador": "admin", "password": "senha_incorreta"},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Usuário ou senha inválidos")
+
+    def test_home_para_usuario_autenticado_exibe_sessao_ativa(self):
+        self.client.force_login(self.admin_user)
+        url = reverse("core:home")
+        resposta = self.client.get(url)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Dashboard Operacional")
+        self.assertContains(resposta, "admin")
 
     def test_rota_inexistente_retorna_404(self):
         resposta = self.client.get("/rota-inexistente-12345/")
         self.assertEqual(resposta.status_code, 404)
+
+    def test_comando_criar_admin(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        out = StringIO()
+        call_command("criar_admin", stdout=out)
+        self.assertIn("Superusuário 'admin' atualizado com sucesso", out.getvalue())
 
 
 class ModeloBaseTests(TestCase):
