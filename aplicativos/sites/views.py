@@ -179,6 +179,12 @@ class ProjetoSiteDetailView(RequerAutenticacaoAdministrativaMixin, DetailView):
         context["endereco_principal"] = projeto.obter_endereco_principal()
         context["base_domain"] = obter_base_domain()
         context["cname_target"] = obter_cname_esperado()
+        context["links_inteligentes"] = projeto.links_inteligentes.all().order_by("-criado_em")
+        context["todos_projetos_ativos"] = (
+            ProjetoSite.objects.exclude(id=projeto.id)
+            .exclude(status=ProjetoSite.Status.ARQUIVADO)
+            .order_by("nome")
+        )
         return context
 
 

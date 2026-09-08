@@ -170,3 +170,7 @@ PLATFORM_HOSTS = env.list(
     "PLATFORM_HOSTS",
     default=["localhost", "127.0.0.1", "[::1]", "testserver"],
 )
+
+# Configurações de Links Inteligentes, Tags NFC e QR Code (Prompt 10)
+SMART_LINK_BASE_URL = env("SMART_LINK_BASE_URL", default="")
+SMART_LINK_HOST = env("SMART_LINK_HOST", default="go.localhost")

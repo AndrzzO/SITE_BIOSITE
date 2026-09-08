@@ -186,6 +186,14 @@ class ProjetoSite(ModeloBase):
         self.arquivado_em = None
         self.save(update_fields=["status", "arquivado_em", "atualizado_em"])
 
+    def total_tags_nfc(self) -> int:
+        """Retorna a contagem de tags NFC vinculadas a este projeto."""
+        return self.links_inteligentes.filter(tipo="nfc").count()
+
+    def total_qr_codes(self) -> int:
+        """Retorna a contagem de QR codes vinculados a este projeto."""
+        return self.links_inteligentes.filter(tipo="qr").count()
+
 
 class PaginaSite(ModeloBase):
     """
@@ -1157,3 +1165,153 @@ class HistoricoEnderecoSite(ModeloBase):
 
     def __str__(self) -> str:
         return f"{self.host} -> {self.projeto.nome} ({self.motivo})"
+
+
+class LinkInteligente(ModeloBase):
+    """
+    Entidade central de roteamento dinâmico para Tags NFC físicas, QR Codes e Links Inteligentes (Prompt 10).
+    Atua como ponte estável e imutável entre objetos físicos e o BioSite digital publicado.
+    """
+
+    class Tipo(models.TextChoices):
+        NFC = "nfc", _("Tag NFC")
+        QR = "qr", _("QR Code")
+        CURTO = "curto", _("Link Curto")
+
+    class Status(models.TextChoices):
+        ATIVO = "ativo", _("Ativo")
+        INATIVO = "inativo", _("Inativo")
+
+    class TipoMidiaFisica(models.TextChoices):
+        CARTAO = "cartao", _("Cartão PVC / Metal")
+        ADESIVO = "adesivo", _("Adesivo / Tag Resinada")
+        CHAVEIRO = "chaveiro", _("Chaveiro")
+        PLACA = "placa", _("Placa de Balcão / Acrílico")
+        OUTRO = "outro", _("Outro")
+
+    projeto = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.PROTECT,
+        related_name="links_inteligentes",
+        verbose_name=_("Projeto BioSite"),
+        help_text=_("BioSite para o qual o visitante será redirecionado."),
+    )
+    token = models.CharField(
+        _("Token Público"),
+        max_length=32,
+        unique=True,
+        db_index=True,
+        help_text=_(
+            "Identificador opaco e imprevisível presente na URL gravada no chip ou QR Code."
+        ),
+    )
+    tipo = models.CharField(
+        _("Tipo de Link"),
+        max_length=10,
+        choices=Tipo.choices,
+        default=Tipo.NFC,
+        db_index=True,
+    )
+    status = models.CharField(
+        _("Status"),
+        max_length=10,
+        choices=Status.choices,
+        default=Status.ATIVO,
+        db_index=True,
+    )
+    tipo_midia_fisica = models.CharField(
+        _("Tipo de Mídia Física"),
+        max_length=30,
+        choices=TipoMidiaFisica.choices,
+        default=TipoMidiaFisica.CARTAO,
+        blank=True,
+    )
+    nome = models.CharField(
+        _("Nome Administrativo"),
+        max_length=120,
+        help_text=_("Ex: Cartão Pessoal Dr. Carlos ou QR Placa Recepção."),
+    )
+    descricao = models.TextField(
+        _("Descrição / Observações"),
+        blank=True,
+        help_text=_("Informações internas como lote, destinatário ou data de entrega."),
+    )
+    ativado_em = models.DateTimeField(_("Ativado em"), null=True, blank=True)
+    desativado_em = models.DateTimeField(_("Desativado em"), null=True, blank=True)
+    metadata = models.JSONField(_("Metadados"), default=dict, blank=True)
+
+    class Meta:
+        verbose_name = _("link inteligente")
+        verbose_name_plural = _("links inteligentes")
+        ordering = ["-criado_em"]
+        indexes = [
+            models.Index(fields=["token", "status"], name="idx_link_token_status"),
+            models.Index(fields=["projeto", "tipo"], name="idx_link_projeto_tipo"),
+        ]
+
+    def __str__(self) -> str:
+        return f"[{self.get_tipo_display()}] {self.nome} ({self.token[:6]}...)"
+
+    def token_mascarado(self) -> str:
+        if len(self.token) <= 8:
+            return self.token
+        return f"{self.token[:4]}...{self.token[-4:]}"
+
+    def obter_url_publica(self, request=None) -> str:
+        from .servicos_links import obter_url_completa_link
+
+        return obter_url_completa_link(self, request=request)
+
+    def esta_operacional(self) -> bool:
+        """Indica se a tag está ativa e o projeto vinculado possui publicação ativa."""
+        return self.status == self.Status.ATIVO and self.projeto.esta_publicado()
+
+
+class HistoricoVinculoTag(ModeloBase):
+    """
+    Registro histórico e auditável de vinculações e trocas de destino de links inteligentes (Prompt 10).
+    Garante rastreabilidade e impede corrupção de métricas históricas de analytics (Prompt 11).
+    """
+
+    link = models.ForeignKey(
+        LinkInteligente,
+        on_delete=models.CASCADE,
+        related_name="historico_vinculos",
+        verbose_name=_("Link Inteligente"),
+    )
+    projeto_anterior = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Projeto Anterior"),
+    )
+    projeto_novo = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.PROTECT,
+        related_name="+",
+        verbose_name=_("Novo Projeto"),
+    )
+    alterado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Alterado Por"),
+    )
+    motivo = models.CharField(
+        _("Motivo"),
+        max_length=255,
+        blank=True,
+        help_text=_("Ex: Reatribuição de cartão a novo cliente ou alteração de campanha."),
+    )
+
+    class Meta:
+        verbose_name = _("histórico de vínculo da tag")
+        verbose_name_plural = _("histórico de vínculos de tags")
+        ordering = ["-criado_em"]
+
+    def __str__(self) -> str:
+        ant = self.projeto_anterior.nome if self.projeto_anterior else "Nenhum"
+        return f"{self.link.nome}: {ant} -> {self.projeto_novo.nome}"

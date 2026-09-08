@@ -50,6 +50,7 @@ from .views_estrutura import (
     SecaoDuplicarView,
     SecaoExcluirView,
 )
+from .views_links import LinkInteligenteCriarView
 from .views_publicacao import (
     DespublicarProjetoView,
     PublicacaoPreviewView,
@@ -138,6 +139,12 @@ urlpatterns = [
         "<uuid:uuid>/dominios/<int:endereco_id>/remover/",
         RemoverDominioView.as_view(),
         name="site_remover_dominio",
+    ),
+    # Links Inteligentes, Tags NFC e QR Code (Prompt 10)
+    path(
+        "<uuid:uuid>/links/criar/",
+        LinkInteligenteCriarView.as_view(),
+        name="site_link_criar",
     ),
     # Editor Visual Mobile-First e Preview (Prompt 5 & 6)
     path("<uuid:uuid>/editor/", EditorStudioView.as_view(), name="site_editor"),

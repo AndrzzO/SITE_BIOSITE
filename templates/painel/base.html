@@ -20,6 +20,7 @@
                     <a href="{% url 'painel:sites' %}" class="nav-link {% if 'sites' in request.path or request.path == '/painel/' %}active{% endif %}">Meus Sites</a>
                     <a href="{% url 'painel:clientes_lista' %}" class="nav-link {% if 'clientes' in request.path %}active{% endif %}">Clientes</a>
                     <a href="{% url 'painel:templates_lista' %}" class="nav-link {% if 'templates' in request.path %}active{% endif %}">Templates</a>
+                    <a href="{% url 'painel:links_lista' %}" class="nav-link {% if 'links' in request.path %}active{% endif %}">NFC / QR</a>
                 </nav>
             </div>
 

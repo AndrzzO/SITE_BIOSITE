@@ -16,5 +16,6 @@ urlpatterns = [
     path("clientes/", include("aplicativos.clientes.urls")),
     path("sites/", include("aplicativos.sites.urls")),
     path("templates/", include("aplicativos.sites.urls_templates")),
+    path("links/", include("aplicativos.sites.urls_links")),
     path("", WorkspaceRedirectView.as_view(), name="inicio"),
 ]

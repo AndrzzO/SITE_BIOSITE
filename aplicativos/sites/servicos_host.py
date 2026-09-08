@@ -51,7 +51,11 @@ def obter_hosts_plataforma() -> set[str]:
         f"app.{base_domain}",
         f"admin.{base_domain}",
         f"painel.{base_domain}",
+        f"go.{base_domain}",
     }
+    smart_host = getattr(settings, "SMART_LINK_HOST", None)
+    if smart_host:
+        hosts.add(normalizar_host(smart_host))
     configurados = getattr(settings, "PLATFORM_HOSTS", None)
     if configurados:
         hosts.update({normalizar_host(h) for h in configurados if h})

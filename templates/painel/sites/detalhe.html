@@ -354,6 +354,113 @@
             </div>
         </div>
 
+        <!-- Card: Tags NFC & QR Codes (Prompt 10) -->
+        <div class="detail-card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 style="font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    📱 Tags NFC & QR Codes
+                </h3>
+                <div style="display: flex; gap: 0.35rem;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalNovoLinkProjeto('nfc')" style="font-size: 0.75rem;">
+                        + Tag NFC
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalNovoLinkProjeto('qr')" style="font-size: 0.75rem;">
+                        + QR Code
+                    </button>
+                </div>
+            </div>
+
+            <p style="font-size: 0.8125rem; color: var(--painel-text-muted); line-height: 1.4; margin-bottom: 1rem;">
+                Links estáveis gravados em cartões físicos ou impressos em materiais gráficos. Mesmo se o domínio do site mudar, a tag física continua funcionando sem precisar ser regravada.
+            </p>
+
+            {% if links_inteligentes %}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    {% for link in links_inteligentes %}
+                        <div style="padding: 0.85rem; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--painel-border);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                        {% if link.tipo == 'nfc' %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: var(--painel-accent); font-weight: 700;">
+                                                NFC
+                                            </span>
+                                        {% else %}
+                                            <span style="font-size: 0.6875rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-weight: 700;">
+                                                QR CODE
+                                            </span>
+                                        {% endif %}
+                                        <strong style="font-size: 0.875rem;">{{ link.nome }}</strong>
+                                        <span style="font-size: 0.75rem; color: var(--painel-text-muted);">({{ link.get_tipo_midia_fisica_display }})</span>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: var(--painel-text-muted);">
+                                        Token: <code>{{ link.token_mascarado }}</code> &bull;
+                                        {% if link.status == 'ativo' %}
+                                            {% if site.esta_publicado %}
+                                                <span style="color: #34d399; font-weight: 600;">● Ativo & No Ar</span>
+                                            {% else %}
+                                                <span style="color: #fbbf24; font-weight: 600;">⚠️ Aguardando publicação</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span style="color: #f87171;">● Inativo</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                    {% if link.tipo == 'qr' %}
+                                        <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="abrirModalQrDetalhe('{{ link.uuid }}', '{{ link.nome|escapejs }}', '{{ link.obter_url_publica }}')" title="Visualizar e baixar QR Code PNG">
+                                            🏁 Ver QR
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="abrirModalDestinoDetalhe('{{ link.uuid }}', '{{ link.nome|escapejs }}')" title="Alterar BioSite de destino desta tag">
+                                        ⇄ Destino
+                                    </button>
+                                    <form method="post" action="{% url 'painel:link_status' link.uuid %}" style="margin: 0; display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        {% if link.status == 'ativo' %}
+                                            <input type="hidden" name="acao" value="desativar">
+                                            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #ef4444;" title="Desativar link">
+                                                Desativar
+                                            </button>
+                                        {% else %}
+                                            <input type="hidden" name="acao" value="ativar">
+                                            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #10b981;" title="Ativar link">
+                                                Ativar
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 0.65rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.4rem 0.6rem; border-radius: 6px;">
+                                <span style="font-size: 0.7rem; color: var(--painel-text-muted); text-transform: uppercase; font-weight: 700;">URL Gravável:</span>
+                                <code style="font-size: 0.75rem; color: var(--painel-accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ link.obter_url_publica }}</code>
+                                <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.15rem 0.45rem; font-size: 0.7rem;" onclick="navigator.clipboard.writeText('{{ link.obter_url_publica }}'); alert('URL do chip NFC copiada!');" title="Copiar URL para gravação">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 1.5rem 1rem; border: 1px dashed var(--painel-border); border-radius: 8px;">
+                    <p style="font-size: 0.8125rem; color: var(--painel-text-muted); margin: 0 0 0.75rem 0;">
+                        Nenhum cartão NFC ou QR Code vinculado a este projeto ainda.
+                    </p>
+                    <div style="display: flex; justify-content: center; gap: 0.5rem;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalNovoLinkProjeto('nfc')">
+                            + Adicionar Tag NFC
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalNovoLinkProjeto('qr')">
+                            + Adicionar QR Code
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
         <div class="detail-card">
             <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; border-bottom: 1px solid var(--painel-border); padding-bottom: 0.75rem;">
                 Dados Administrativos
@@ -488,4 +595,161 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Modal: Criar Novo Link para Este Projeto -->
+<div id="modal-novo-link-detalhe" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--painel-card-bg, #111827); border: 1px solid var(--painel-border); border-radius: 12px; width: 100%; max-width: 480px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;" id="modal-link-detalhe-titulo">Adicionar Link Inteligente</h3>
+            <button type="button" onclick="document.getElementById('modal-novo-link-detalhe').style.display='none'" style="background: none; border: none; font-size: 1.25rem; color: var(--painel-text-muted); cursor: pointer;">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'painel:site_link_criar' site.uuid %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="tipo" id="input-link-detalhe-tipo" value="nfc">
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.35rem;">Nome Administrativo *</label>
+                <input type="text" name="nome" id="input-link-detalhe-nome" required placeholder="ex: Cartão Pessoal ou QR Recepção" class="form-input" style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 1rem;" id="bloco-midia-fisica">
+                <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.35rem;">Mídia Física</label>
+                <select name="tipo_midia_fisica" class="form-input" style="width: 100%;">
+                    <option value="cartao">Cartão PVC / Metal</option>
+                    <option value="adesivo">Adesivo / Resinada</option>
+                    <option value="chaveiro">Chaveiro</option>
+                    <option value="placa">Placa de Balcão</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.35rem;">Observações / Lote (opcional)</label>
+                <textarea name="descricao" rows="2" placeholder="Informações de lote ou entrega..." class="form-input" style="width: 100%;"></textarea>
+            </div>
+
+            <div style="padding: 0.75rem; border-radius: 6px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); font-size: 0.75rem; color: #38bdf8; margin-bottom: 1.25rem; line-height: 1.4;">
+                ℹ️ Uma URL estável exclusiva será gerada para este link. Ao trocar o domínio ou publicação do site, a tag continuará funcionando perfeitamente sem precisar ser regravada.
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-novo-link-detalhe').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Criar Link</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Alterar Destino da Tag -->
+<div id="modal-alterar-destino-detalhe" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--painel-card-bg, #111827); border: 1px solid var(--painel-border); border-radius: 12px; width: 100%; max-width: 480px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">Alterar Destino da Tag</h3>
+            <button type="button" onclick="document.getElementById('modal-alterar-destino-detalhe').style.display='none'" style="background: none; border: none; font-size: 1.25rem; color: var(--painel-text-muted); cursor: pointer;">&times;</button>
+        </div>
+
+        <form method="post" id="form-alterar-destino-detalhe">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <p style="font-size: 0.875rem; color: var(--painel-text-muted); margin-bottom: 1rem;">
+                Você está alterando o BioSite para o qual a tag <strong id="modal-detalhe-tag-nome" style="color: var(--painel-text);"></strong> aponta. A URL gravada no chip físico continuará funcionando normalmente.
+            </p>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.35rem;">Novo Projeto de Destino *</label>
+                <select name="novo_projeto_uuid" required class="form-input" style="width: 100%;">
+                    <option value="">Selecione o novo projeto...</option>
+                    {% for p in todos_projetos_ativos %}
+                        <option value="{{ p.uuid }}">{{ p.nome }} ({{ p.cliente.nome }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.35rem;">Motivo da Alteração (Histórico de Auditoria)</label>
+                <input type="text" name="motivo" placeholder="ex: Reatribuição de cartão a novo cliente" class="form-input" style="width: 100%;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-alterar-destino-detalhe').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Confirmar Nova Vinculação</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Visualizador de QR Code -->
+<div id="modal-preview-qr-detalhe" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--painel-card-bg, #111827); border: 1px solid var(--painel-border); border-radius: 12px; width: 100%; max-width: 440px; padding: 1.75rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;" id="qr-detalhe-modal-titulo">QR Code Inteligente</h3>
+            <button type="button" onclick="document.getElementById('modal-preview-qr-detalhe').style.display='none'" style="background: none; border: none; font-size: 1.25rem; color: var(--painel-text-muted); cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="background: #ffffff; padding: 1rem; border-radius: 8px; display: inline-block; margin: 1rem 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <img id="qr-detalhe-modal-img" src="" alt="QR Code" style="width: 256px; height: 256px; display: block;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="font-size: 0.75rem; color: var(--painel-text-muted); text-transform: uppercase; font-weight: 700;">URL Codificada:</label>
+            <div style="font-family: monospace; font-size: 0.8125rem; color: var(--painel-accent); word-break: break-all; margin-top: 0.25rem;" id="qr-detalhe-modal-url"></div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 0.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-preview-qr-detalhe').style.display='none'">Fechar</button>
+            <a id="qr-detalhe-modal-btn-download" href="" class="btn btn-primary" download>
+                ⬇ Baixar PNG (Alta Resolução)
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalNovoLinkProjeto(tipo) {
+    const modal = document.getElementById('modal-novo-link-detalhe');
+    const titulo = document.getElementById('modal-link-detalhe-titulo');
+    const inputTipo = document.getElementById('input-link-detalhe-tipo');
+    const inputNome = document.getElementById('input-link-detalhe-nome');
+    const blocoMidia = document.getElementById('bloco-midia-fisica');
+
+    inputTipo.value = tipo;
+    if (tipo === 'nfc') {
+        titulo.textContent = 'Adicionar Tag NFC (Cartão / Chaveiro)';
+        inputNome.placeholder = 'ex: Cartão Pessoal {{ site.nome|escapejs }}';
+        blocoMidia.style.display = 'block';
+    } else {
+        titulo.textContent = 'Adicionar QR Code Inteligente';
+        inputNome.placeholder = 'ex: QR Code Recepção {{ site.nome|escapejs }}';
+        blocoMidia.style.display = 'none';
+    }
+    modal.style.display = 'flex';
+}
+
+function abrirModalDestinoDetalhe(linkUuid, linkNome) {
+    const modal = document.getElementById('modal-alterar-destino-detalhe');
+    const form = document.getElementById('form-alterar-destino-detalhe');
+    const nomeEl = document.getElementById('modal-detalhe-tag-nome');
+    form.action = `/painel/links/${linkUuid}/destino/`;
+    nomeEl.textContent = linkNome;
+    modal.style.display = 'flex';
+}
+
+function abrirModalQrDetalhe(linkUuid, linkNome, urlCompleta) {
+    const modal = document.getElementById('modal-preview-qr-detalhe');
+    const img = document.getElementById('qr-detalhe-modal-img');
+    const titulo = document.getElementById('qr-detalhe-modal-titulo');
+    const urlEl = document.getElementById('qr-detalhe-modal-url');
+    const btnDown = document.getElementById('qr-detalhe-modal-btn-download');
+
+    titulo.textContent = linkNome;
+    urlEl.textContent = urlCompleta;
+    img.src = `/painel/links/${linkUuid}/qr/?tamanho=512`;
+    btnDown.href = `/painel/links/${linkUuid}/qr/?tamanho=1024&download=1`;
+
+    modal.style.display = 'flex';
+}
+</script>
 {% endblock %}

@@ -577,7 +577,37 @@ python manage.py verificar_dominios
 
 ---
 
-## 16. Qualidade de Código e Lint
+## 16. NFC, QR Code e Links Inteligentes (Prompt 10)
+
+Sistema de redirecionamento dinâmico e gestão de tags físicas (NFC e QR Code) com desvinculação absoluta entre o hardware físico/material impresso e o destino web.
+
+### 16.1 O Princípio Central: Imutabilidade da Mídia Física
+- Tags físicas (cartões NFC, chaveiros, adesivos, placas de balcão) e QR Codes impressos são gravados com URLs canônicas da plataforma de redirecionamento:
+  - NFC: `https://go.seudominio.com/n/<token>/`
+  - QR Code: `https://go.seudominio.com/q/<token>/`
+- O redirector central resolve em tempo de execução o projeto ativo vinculado e seu endereço canônico atual (`obter_url_publica_projeto`).
+- **Benefício**: Se o BioSite alterar seu subdomínio, cadastrar um novo domínio próprio, ou a tag física for reatribuída a outro cliente/projeto, **o chip NFC físico e o material impresso NUNCA precisam ser regravados ou reimpressos**.
+
+### 16.2 Segurança e Isolamento do Redirector
+- **HTTP 302 Found**: Redirecionamento temporário para garantir que navegadores não façam cache do destino, permitindo trocas instantâneas de projeto no painel.
+- **Isolamento de Cabeçalho Host**: URLs de destino são obtidas puramente do banco de dados e das configurações seguras da plataforma, sem uso de `request.get_host()`, prevenindo ataques de *Host Header Poisoning*.
+- **Anti Open-Redirect**: Parâmetros como `?url=` ou `?next=` são estritamente proibidos; o redirector só redireciona para projetos internos válidos.
+- **Cookieless & Privacy-First**: As rotas de redirecionamento operam livres de cookies de sessão, rastreamento ou autenticação, com cabeçalho `X-Robots-Tag: noindex, nofollow`.
+- **Barreira de Serviço**: O host `go.seudominio.com` bloqueia requisições a rotas administrativas (`/painel/`, `/admin/`).
+
+### 16.3 Gerador de QR Code
+- Geração nativa com a biblioteca `qrcode` e `Pillow` utilizando nível de correção de erro **M (15%)** e quiet zone de 4 módulos.
+- Permite download e renderização em tamanhos padronizados (256px, 512px, 1024px, 2048px).
+
+### 16.4 Auditoria de Links Inteligentes
+Para auditar a unicidade de tokens, links órfãos e integridade do histórico:
+```bash
+python manage.py verificar_links_inteligentes
+```
+
+---
+
+## 17. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -589,14 +619,14 @@ Para formatar automaticamente o código:
 ruff format .
 ```
 
-Para executar a suíte completa de testes automatizados (227 testes):
+Para executar a suíte completa de testes automatizados (252 testes):
 ```bash
 python manage.py test --settings=configuracao.settings.teste
 ```
 
 ---
 
-## 17. Próximas Etapas (Prompts 10 a 12)
+## 18. Próximas Etapas (Prompts 11 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
@@ -607,9 +637,10 @@ python manage.py test --settings=configuracao.settings.teste
 7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas *(Concluído)*
 8. **Prompt 8:** Rascunho, Preview Final, Versionamento, Publicação e Hospedagem *(Concluído — 199 testes)*
 9. **Prompt 9:** Subdomínios, Domínios Personalizados e Resolução Segura de Host *(Concluído — 227 testes)*
-10. **Prompt 10:** Integração NFC, Tags Físicas, QR Code Dinâmico e Analytics
+10. **Prompt 10:** NFC, QR Code e Links Inteligentes *(Concluído — 252 testes)*
 11. **Prompt 11:** Hardening, Performance e Telemetria
 12. **Prompt 12:** Auditoria e Entrega Final
+
 
 
 

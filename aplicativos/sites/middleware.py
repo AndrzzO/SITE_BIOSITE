@@ -10,6 +10,7 @@ from django.http import (
 )
 
 from .servicos_host import ClasseHost, classificar_host, resolver_site_por_host
+from .validadores_dominios import normalizar_host
 
 logger = logging.getLogger("aplicativos.sites.middleware")
 
@@ -38,10 +39,33 @@ class HostRoutingMiddleware:
 
         classe_host, host_norm = classificar_host(host_bruto)
 
-        # 1. Requisição destinada à plataforma (painel, health, login, /b/<slug>/)
+        # 1. Requisição destinada à plataforma (painel, health, login, /b/<slug>/, /n/, /q/)
         if classe_host == ClasseHost.HOST_PLATAFORMA:
             request.eh_host_plataforma = True
             request.site_resolvido = None
+
+            # BARREIRA DE SEGURANÇA (Prompt 10): Nunca expor o painel/admin pelo host go do redirector
+            from django.conf import settings
+
+            from .servicos_dominios import obter_base_domain
+
+            smart_host = getattr(settings, "SMART_LINK_HOST", f"go.{obter_base_domain()}")
+            smart_host_norm = normalizar_host(smart_host)
+            if host_norm == smart_host_norm and host_norm not in (
+                "localhost",
+                "127.0.0.1",
+                "[::1]",
+                "testserver",
+            ):
+                caminho = request.path_info
+                if caminho.startswith(("/painel", "/admin")):
+                    logger.warning(
+                        "Tentativa de acesso a rota administrativa '%s' bloqueada no host de redirecionamento '%s'.",
+                        caminho,
+                        host_norm,
+                    )
+                    return HttpResponseNotFound("Página não encontrada.")
+
             return self.get_response(request)
 
         # 2. Requisição destinada a um BioSite de cliente (subdomínio ou custom domain)

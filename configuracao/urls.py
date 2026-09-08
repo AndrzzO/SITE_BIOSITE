@@ -14,6 +14,8 @@ urlpatterns = [
     path("health/", include("aplicativos.core.urls_health", namespace="health")),
     # BioSites Públicos (Prompt 8)
     path("b/", include("aplicativos.sites.urls_publicas", namespace="publico")),
+    # Redirector Central de Links Inteligentes, Tags NFC e QR Code (Prompt 10)
+    path("", include("aplicativos.sites.urls_redirect")),
     # Rotas públicas do aplicativo central (Home temporária)
     path("", include("aplicativos.core.urls", namespace="core")),
 ]
