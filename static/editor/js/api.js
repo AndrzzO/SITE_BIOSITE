@@ -183,5 +183,37 @@ export const EditorApi = {
         return fetchJson(`/painel/sites/${siteUuid}/despublicar/`, {
             method: 'POST'
         });
+    },
+
+    async uploadMidia(siteUuid, arquivo, tipo = 'IMAGEM') {
+        const formData = new FormData();
+        formData.append('arquivo', arquivo);
+        formData.append('tipo', tipo);
+
+        const csrfToken = getCsrfToken();
+        const headers = {
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+
+        const resp = await fetch(`/painel/sites/${siteUuid}/editor/midia/upload/`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+            throw new Error(data.erro || `Falha no upload (${resp.status})`);
+        }
+        return data;
+    },
+
+    async listarMidias(siteUuid) {
+        return fetchJson(`/painel/sites/${siteUuid}/editor/midia/listar/`, {
+            method: 'GET'
+        });
     }
 };

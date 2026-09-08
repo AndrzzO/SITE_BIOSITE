@@ -1743,3 +1743,52 @@ body.editor-active {
     font-mono: monospace;
 }
 
+/* Galeria de Mídias Modal Cards */
+.galeria-card-item {
+    background: var(--studio-surface-alt);
+    border: 1px solid var(--studio-border);
+    border-radius: 8px;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.galeria-card-item:hover {
+    border-color: var(--studio-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.galeria-thumb-wrapper {
+    width: 100%;
+    height: 90px;
+    background: #000000;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.galeria-thumb-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.galeria-item-nome {
+    font-size: 0.7rem;
+    color: var(--studio-text);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+

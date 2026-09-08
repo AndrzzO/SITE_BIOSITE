@@ -624,6 +624,34 @@
     </div>
 </div>
 
+<!-- Modal: Galeria de Mídias e Upload de Fotos do PC -->
+<div id="modal-galeria-midia" class="studio-modal-backdrop" style="display: none;">
+    <div class="studio-modal-box" style="width: 760px; max-width: 95vw;">
+        <div class="studio-modal-header">
+            <h3>📁 Galeria de Imagens do Projeto</h3>
+            <button type="button" class="studio-modal-close" data-fechar-modal>&times;</button>
+        </div>
+        <div class="studio-modal-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <p style="font-size: 0.8125rem; color: var(--studio-text-muted); margin: 0;">
+                    Selecione uma imagem já enviada ou envie uma nova foto do seu computador.
+                </p>
+                <input type="file" id="input-galeria-upload-file" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                <button type="button" class="btn-publicar" id="btn-galeria-novo-upload" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                    📷 Enviar Nova Foto do PC
+                </button>
+            </div>
+
+            <div id="grid-galeria-midias" class="galeria-midias-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; max-height: 380px; overflow-y: auto; padding: 4px;">
+                <!-- Preenchido dinamicamente via JS -->
+            </div>
+        </div>
+        <div class="studio-modal-footer">
+            <button type="button" class="btn-preview" data-fechar-modal>Fechar</button>
+        </div>
+    </div>
+</div>
+
 <style>
 .pub-checklist-box {
     display: flex;

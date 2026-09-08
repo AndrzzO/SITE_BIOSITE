@@ -13,22 +13,24 @@ import { HistoricoManager } from './historico.js';
 import { CanvasLivreManager } from './canvas_livre.js';
 import { HistoricoUndoManager } from './historico_undo.js';
 import { HtmlImportManager } from './html_import.js';
+import { GaleriaMidiaManager } from './galeria_midia.js';
 
 export class BioSiteEditorStudio {
     constructor(config) {
         this.siteUuid = config.siteUuid;
         this.paginaId = config.paginaId;
 
-        this.canvasManager      = null;
-        this.selecaoManager     = null;
-        this.inlineEditManager  = null;
-        this.dragdropManager    = null;
-        this.propriedadesManager = null;
-        this.autosaveManager    = null;
-        this.historicoManager   = null;
-        this.canvasLivreManager = null;
-        this.historicoUndo      = null;
-        this.htmlImportManager  = null;
+        this.canvasManager       = null;
+        this.selecaoManager      = null;
+        this.inlineEditManager   = null;
+        this.dragdropManager     = null;
+        this.propriedadesManager  = null;
+        this.autosaveManager     = null;
+        this.historicoManager    = null;
+        this.canvasLivreManager  = null;
+        this.historicoUndo       = null;
+        this.htmlImportManager   = null;
+        this.galeriaMidiaManager = null;
 
         this.init();
     }
@@ -45,6 +47,7 @@ export class BioSiteEditorStudio {
         this.autosaveManager     = new AutosaveManager(this);
         this.historicoManager    = new HistoricoManager(this);
         this.htmlImportManager   = new HtmlImportManager(this);
+        this.galeriaMidiaManager = new GaleriaMidiaManager(this);
 
         this.initAbasSidebar();
         this.initAcoesSecoes();

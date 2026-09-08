@@ -204,11 +204,30 @@ export class PropriedadesManager {
                 </div>
             `;
         } else if (tipoElem === 'AVATAR') {
+            const urlAtual = el.querySelector('img')?.getAttribute('src') || '';
             camposEspecificosHtml = `
                 <div class="form-group-prop">
-                    <label class="prop-label">URL da Imagem de Perfil</label>
-                    <input type="url" class="prop-input" id="prop-campo-url" placeholder="https://...">
-                    <button type="button" class="btn-upload-midia" style="margin-top: 0.35rem;" id="btn-abrir-midia">📁 Escolher da Galeria de Mídias</button>
+                    <label class="prop-label">Foto de Perfil</label>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; padding: 0.5rem; background: var(--studio-surface-alt); border-radius: 8px; border: 1px solid var(--studio-border);">
+                        <img id="avatar-preview-mini" src="${urlAtual || ''}" 
+                             style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--studio-accent); background: #000; flex-shrink: 0; display: ${urlAtual ? 'block' : 'none'};">
+                        <div id="avatar-preview-vazio" style="width: 52px; height: 52px; border-radius: 50%; display: ${urlAtual ? 'none' : 'flex'}; align-items: center; justify-content: center; background: #1e293b; color: #94a3b8; font-size: 1.5rem; border: 2px dashed var(--studio-border); flex-shrink: 0;">
+                            👤
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                            <input type="file" id="prop-upload-file-pc" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                            <button type="button" class="btn-studio-tool" id="btn-escolher-foto-pc" style="background: var(--studio-accent); color: #000; font-weight: 700; width: 100%; justify-content: center; padding: 0.4rem;">
+                                📷 Escolher Foto do Meu PC
+                            </button>
+                            <button type="button" class="btn-upload-midia" id="btn-abrir-galeria-midias" style="width: 100%; font-size: 0.75rem; padding: 0.3rem;">
+                                📁 Galeria de Mídias
+                            </button>
+                        </div>
+                    </div>
+                    <div id="upload-status-feedback" style="font-size: 0.75rem; color: var(--studio-accent); margin-bottom: 0.5rem; display: none; font-weight: 600;"></div>
+
+                    <label class="prop-label" style="font-size: 0.7rem;">Ou colar URL da Foto:</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" value="${this.escapeHtml(urlAtual)}" placeholder="https://exemplo.com/foto.jpg">
                 </div>
                 <div class="form-group-prop">
                     <label class="prop-label">Forma do Avatar</label>
@@ -220,7 +239,7 @@ export class PropriedadesManager {
                 </div>
                 <div class="form-group-prop">
                     <label class="prop-label">Tamanho (px)</label>
-                    <input type="range" class="prop-input" id="prop-campo-tamanho" min="48" max="180" value="100" oninput="document.getElementById('val-tamanho-avatar').textContent = this.value + 'px'">
+                    <input type="range" class="prop-input" id="prop-campo-tamanho" min="48" max="220" value="100" oninput="document.getElementById('val-tamanho-avatar').textContent = this.value + 'px'">
                     <span id="val-tamanho-avatar" style="font-size: 0.75rem; color: var(--studio-text-muted);">100px</span>
                 </div>
             `;
@@ -249,11 +268,30 @@ export class PropriedadesManager {
                 </div>
             `;
         } else if (tipoElem === 'IMAGEM') {
+            const urlAtual = el.querySelector('img')?.getAttribute('src') || '';
             camposEspecificosHtml = `
                 <div class="form-group-prop">
-                    <label class="prop-label">URL da Imagem</label>
-                    <input type="url" class="prop-input" id="prop-campo-url" placeholder="https://...">
-                    <button type="button" class="btn-upload-midia" style="margin-top: 0.35rem;" id="btn-abrir-midia">📁 Escolher da Galeria de Mídias</button>
+                    <label class="prop-label">Arquivo de Imagem</label>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; padding: 0.5rem; background: var(--studio-surface-alt); border-radius: 8px; border: 1px solid var(--studio-border);">
+                        <img id="avatar-preview-mini" src="${urlAtual || ''}" 
+                             style="width: 52px; height: 52px; border-radius: 6px; object-fit: cover; border: 1px solid var(--studio-accent); background: #000; flex-shrink: 0; display: ${urlAtual ? 'block' : 'none'};">
+                        <div id="avatar-preview-vazio" style="width: 52px; height: 52px; border-radius: 6px; display: ${urlAtual ? 'none' : 'flex'}; align-items: center; justify-content: center; background: #1e293b; color: #94a3b8; font-size: 1.5rem; border: 2px dashed var(--studio-border); flex-shrink: 0;">
+                            🖼️
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                            <input type="file" id="prop-upload-file-pc" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                            <button type="button" class="btn-studio-tool" id="btn-escolher-foto-pc" style="background: var(--studio-accent); color: #000; font-weight: 700; width: 100%; justify-content: center; padding: 0.4rem;">
+                                📷 Escolher Imagem do Meu PC
+                            </button>
+                            <button type="button" class="btn-upload-midia" id="btn-abrir-galeria-midias" style="width: 100%; font-size: 0.75rem; padding: 0.3rem;">
+                                📁 Galeria de Mídias
+                            </button>
+                        </div>
+                    </div>
+                    <div id="upload-status-feedback" style="font-size: 0.75rem; color: var(--studio-accent); margin-bottom: 0.5rem; display: none; font-weight: 600;"></div>
+
+                    <label class="prop-label" style="font-size: 0.7rem;">Ou colar URL da Imagem:</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" value="${this.escapeHtml(urlAtual)}" placeholder="https://exemplo.com/foto.jpg">
                 </div>
                 <div class="form-group-prop">
                     <label class="prop-label">Texto Alternativo (Alt)</label>
@@ -317,11 +355,30 @@ export class PropriedadesManager {
                 </div>
             `;
         } else if (tipoElem === 'LOGO') {
+            const urlLogo = el.querySelector('img')?.getAttribute('src') || '';
             camposEspecificosHtml = `
                 <div class="form-group-prop">
-                    <label class="prop-label">URL da Imagem do Logo</label>
-                    <input type="url" class="prop-input" id="prop-campo-url_imagem" placeholder="https://...">
-                    <button type="button" class="btn-upload-midia" style="margin-top: 0.35rem;" id="btn-abrir-midia">📁 Escolher da Galeria de Mídias</button>
+                    <label class="prop-label">Logo da Marca</label>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; padding: 0.5rem; background: var(--studio-surface-alt); border-radius: 8px; border: 1px solid var(--studio-border);">
+                        <img id="avatar-preview-mini" src="${urlLogo || ''}" 
+                             style="width: 52px; height: 52px; border-radius: 6px; object-fit: contain; border: 1px solid var(--studio-accent); background: #000; flex-shrink: 0; display: ${urlLogo ? 'block' : 'none'};">
+                        <div id="avatar-preview-vazio" style="width: 52px; height: 52px; border-radius: 6px; display: ${urlLogo ? 'none' : 'flex'}; align-items: center; justify-content: center; background: #1e293b; color: #94a3b8; font-size: 1.5rem; border: 2px dashed var(--studio-border); flex-shrink: 0;">
+                            🏷️
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                            <input type="file" id="prop-upload-file-pc" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                            <button type="button" class="btn-studio-tool" id="btn-escolher-foto-pc" style="background: var(--studio-accent); color: #000; font-weight: 700; width: 100%; justify-content: center; padding: 0.4rem;">
+                                📷 Escolher Logo do Meu PC
+                            </button>
+                            <button type="button" class="btn-upload-midia" id="btn-abrir-galeria-midias" style="width: 100%; font-size: 0.75rem; padding: 0.3rem;">
+                                📁 Galeria de Mídias
+                            </button>
+                        </div>
+                    </div>
+                    <div id="upload-status-feedback" style="font-size: 0.75rem; color: var(--studio-accent); margin-bottom: 0.5rem; display: none; font-weight: 600;"></div>
+
+                    <label class="prop-label" style="font-size: 0.7rem;">Ou colar URL do Logo:</label>
+                    <input type="url" class="prop-input" id="prop-campo-url_imagem" value="${this.escapeHtml(urlLogo)}" placeholder="https://...">
                 </div>
                 <div class="form-group-prop">
                     <label class="prop-label">Nome da Marca</label>
@@ -504,6 +561,122 @@ export class PropriedadesManager {
                     });
                 });
             }
+        });
+
+        // Upload direto de foto do PC e Galeria de Mídias (AVATAR, IMAGEM, LOGO)
+        const btnUploadPc = document.getElementById('btn-escolher-foto-pc');
+        const inputUploadPc = document.getElementById('prop-upload-file-pc');
+        const statusFeedback = document.getElementById('upload-status-feedback');
+        const inputUrl = document.getElementById('prop-campo-url') || document.getElementById('prop-campo-url_imagem');
+        const previewMini = document.getElementById('avatar-preview-mini');
+        const previewVazio = document.getElementById('avatar-preview-vazio');
+
+        const aplicarNovaImagem = (url) => {
+            if (!url) return;
+            if (inputUrl) {
+                inputUrl.value = url;
+            }
+            if (previewMini) {
+                previewMini.src = url;
+                previewMini.style.display = 'block';
+            }
+            if (previewVazio) {
+                previewVazio.style.display = 'none';
+            }
+
+            // Atualiza o elemento no Canvas em tempo real
+            if (tipoElem === 'AVATAR') {
+                const img = el.querySelector('img.elemento-avatar');
+                if (img) {
+                    img.src = url;
+                } else {
+                    const placeholder = el.querySelector('.avatar-placeholder');
+                    const novoHtml = `<div class="elemento-avatar-container"><img src="${url}" alt="Foto de Perfil" class="elemento-avatar avatar-circulo avatar-borda" style="width:100px;height:100px;object-fit:cover;" loading="lazy"></div>`;
+                    if (placeholder) {
+                        placeholder.outerHTML = novoHtml;
+                    } else {
+                        el.innerHTML = novoHtml;
+                    }
+                }
+                this.editor.autosaveManager.agendarSalvamento({
+                    elemento_id: id,
+                    conteudo: { url: url }
+                });
+            } else if (tipoElem === 'IMAGEM') {
+                const img = el.querySelector('img');
+                if (img) {
+                    img.src = url;
+                } else {
+                    el.innerHTML = `<img src="${url}" alt="Imagem" style="width:100%;height:auto;display:block;">`;
+                }
+                this.editor.autosaveManager.agendarSalvamento({
+                    elemento_id: id,
+                    conteudo: { url: url, url_imagem: url }
+                });
+            } else if (tipoElem === 'LOGO') {
+                const img = el.querySelector('img');
+                if (img) {
+                    img.src = url;
+                } else {
+                    el.innerHTML = `<img src="${url}" alt="Logo" style="max-width:140px;width:100%;height:auto;display:block;margin:0 auto;" loading="lazy">`;
+                }
+                this.editor.autosaveManager.agendarSalvamento({
+                    elemento_id: id,
+                    conteudo: { url_imagem: url }
+                });
+            }
+        };
+
+        if (btnUploadPc && inputUploadPc) {
+            btnUploadPc.addEventListener('click', (e) => {
+                e.preventDefault();
+                inputUploadPc.click();
+            });
+
+            inputUploadPc.addEventListener('change', async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                if (statusFeedback) {
+                    statusFeedback.textContent = '⏳ Enviando foto do seu PC...';
+                    statusFeedback.style.display = 'block';
+                }
+                btnUploadPc.disabled = true;
+
+                try {
+                    const tipoMidia = tipoElem === 'AVATAR' ? 'AVATAR' : 'IMAGEM';
+                    const resp = await this.editor.galeriaMidiaManager.fazerUpload(file, tipoMidia);
+                    if (resp) {
+                        aplicarNovaImagem(resp);
+                        if (statusFeedback) {
+                            statusFeedback.textContent = '✓ Foto atualizada com sucesso!';
+                            setTimeout(() => { if (statusFeedback) statusFeedback.style.display = 'none'; }, 4000);
+                        }
+                    }
+                } catch (err) {
+                    if (statusFeedback) {
+                        statusFeedback.textContent = `❌ Erro: ${err.message}`;
+                    }
+                } finally {
+                    btnUploadPc.disabled = false;
+                    inputUploadPc.value = '';
+                }
+            });
+        }
+
+        // Botão Galeria de Mídias
+        const btnGaleria = document.getElementById('btn-abrir-galeria-midias');
+        if (btnGaleria && this.editor.galeriaMidiaManager) {
+            btnGaleria.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.editor.galeriaMidiaManager.abrir((urlEscolhida) => {
+                    aplicarNovaImagem(urlEscolhida);
+                });
+            });
+        }
+
+        inputUrl?.addEventListener('change', (e) => {
+            aplicarNovaImagem(e.target.value.trim());
         });
 
         // Posição no Canvas Livre (X, Y, W, Z)
