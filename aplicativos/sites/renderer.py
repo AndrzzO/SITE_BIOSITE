@@ -50,8 +50,12 @@ class RenderizadorBioSite:
             "border-color": "border-color",
             "largura_borda": "border-width",
             "border-width": "border-width",
+            "estilo_borda": "border-style",
+            "border-style": "border-style",
             "raio_borda": "border-radius",
             "border-radius": "border-radius",
+            "sombra": "box-shadow",
+            "box-shadow": "box-shadow",
             "margem_topo": "margin-top",
             "margin-top": "margin-top",
             "margem_baixo": "margin-bottom",
@@ -63,9 +67,38 @@ class RenderizadorBioSite:
             "padding_lateral": "padding-left",  # também aplica em padding-right
             "opacidade": "opacity",
             "opacity": "opacity",
+            "largura_maxima": "max-width",
+            "max-width": "max-width",
+            "gap": "gap",
+            "animacao": "animation",
+            "animation": "animation",
+            "backdrop_filter": "backdrop-filter",
         }
 
-        def _formatar_valor(prop: str, valor: Any) -> str:
+        mapa_sombras = {
+            "none": "none",
+            "nenhuma": "none",
+            "suave": "0 2px 8px -2px rgba(0, 0, 0, 0.08), 0 1px 4px -1px rgba(0, 0, 0, 0.04)",
+            "media": "0 6px 16px -4px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.06)",
+            "forte": "0 12px 28px -6px rgba(0, 0, 0, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.1)",
+            "glow": "0 0 24px var(--cor-primaria, #2563eb)",
+        }
+
+        mapa_animacoes = {
+            "fade": "biositeFadeIn 0.4s ease-out forwards",
+            "fade-up": "biositeFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+            "scale": "biositeScaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+            "slide": "biositeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        }
+
+        def _formatar_valor(chave: str, prop: str, valor: Any) -> str:
+            if chave in ["sombra", "box-shadow"]:
+                return mapa_sombras.get(str(valor).lower(), str(valor))
+            if chave in ["animacao", "animation"]:
+                return mapa_animacoes.get(str(valor).lower(), str(valor))
+            if chave == "backdrop_filter":
+                return f"blur({valor}px)" if isinstance(valor, (int, float)) else str(valor)
+
             if prop in [
                 "font-size",
                 "border-width",
@@ -76,11 +109,13 @@ class RenderizadorBioSite:
                 "padding-bottom",
                 "padding-left",
                 "padding-right",
+                "max-width",
+                "gap",
             ]:
                 val_str = str(valor).strip()
                 return (
                     val_str
-                    if "px" in val_str or "%" in val_str or "rem" in val_str
+                    if "px" in val_str or "%" in val_str or "rem" in val_str or "vw" in val_str
                     else f"{val_str}px"
                 )
             return str(valor)
@@ -92,11 +127,15 @@ class RenderizadorBioSite:
             for k, v in base.items():
                 prop_css = mapeamento.get(k)
                 if prop_css and v:
-                    val = _formatar_valor(prop_css, v)
+                    val = _formatar_valor(k, prop_css, v)
                     base_regras.append(f"{prop_css}: {val};")
                     if k == "padding_lateral":
                         base_regras.append(f"padding-right: {val};")
-                    if prop_css == "border-width" and "border-style" not in base:
+                    if (
+                        prop_css == "border-width"
+                        and "border-style" not in base
+                        and "estilo_borda" not in base
+                    ):
                         base_regras.append("border-style: solid;")
 
         if base_regras:
@@ -109,7 +148,7 @@ class RenderizadorBioSite:
             for k, v in desktop.items():
                 prop_css = mapeamento.get(k)
                 if prop_css and v:
-                    val = _formatar_valor(prop_css, v)
+                    val = _formatar_valor(k, prop_css, v)
                     desktop_regras.append(f"{prop_css}: {val};")
                     if k == "padding_lateral":
                         desktop_regras.append(f"padding-right: {val};")
@@ -292,7 +331,18 @@ class RenderizadorBioSite:
         )
 
     def renderizar_pagina(self, pagina: PaginaSite) -> SafeString:
-        """Renderiza a página completa com todas as suas seções ordenadas."""
+        """Renderiza a página completa com todas as suas seções ordenadas e tokens do Design System."""
+        from .models import garantir_configuracao_visual
+
+        config_visual = getattr(pagina.projeto, "configuracao_visual", None)
+        if not config_visual:
+            config_visual = garantir_configuracao_visual(pagina.projeto)
+
+        bloco_tokens = config_visual.gerar_bloco_css()
+        tag_tokens = format_html(
+            '<style id="biosite-tokens-css">{}</style>', mark_safe(bloco_tokens)
+        )
+
         secoes = pagina.secoes.filter(ativa=True).order_by("ordem")
         secoes_html = [self.renderizar_secao(s) for s in secoes]
 
@@ -326,6 +376,7 @@ class RenderizadorBioSite:
             return format_html(
                 """
                 <div class="biosite-canvas-root editor-mode" id="biosite-canvas-root" data-pagina-id="{}">
+                    {}
                     <div id="editor-secoes-container" class="sortable-secoes">
                         {}{}
                     </div>
@@ -333,6 +384,7 @@ class RenderizadorBioSite:
                 </div>
                 """,
                 pagina.id,
+                tag_tokens,
                 vazio_html,
                 mark_safe("".join(secoes_html)),
                 add_fim if secoes_html else "",
@@ -342,8 +394,16 @@ class RenderizadorBioSite:
             """
             <div class="biosite-canvas-root preview-mode" id="biosite-canvas-root" data-pagina-id="{}">
                 {}
+                {}
             </div>
             """,
             pagina.id,
+            tag_tokens,
             mark_safe("".join(secoes_html)),
         )
+
+
+def renderizar_pagina(pagina: PaginaSite, modo_editor: bool = False) -> SafeString:
+    """Função utilitária para renderizar uma página completa."""
+    modo = "editor" if modo_editor else "preview"
+    return RenderizadorBioSite(modo=modo).renderizar_pagina(pagina)

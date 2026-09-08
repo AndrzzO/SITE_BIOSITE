@@ -44,13 +44,14 @@
         <aside class="studio-sidebar-left">
             <div class="sidebar-tabs">
                 <button type="button" class="sidebar-tab active" data-tab="tab-elementos">ELEMENTOS</button>
+                <button type="button" class="sidebar-tab" data-tab="tab-design">DESIGN</button>
                 <button type="button" class="sidebar-tab" data-tab="tab-paginas">PÁGINAS</button>
                 <button type="button" class="sidebar-tab" data-tab="tab-estrutura">ESTRUTURA</button>
             </div>
 
             <!-- Tab: Elementos -->
             <div class="sidebar-tab-content active" id="tab-elementos">
-                <div class="paleta-secao-titulo">Elementos Básicos</div>
+                <div class="paleta-secao-titulo">Elementos & Blocos</div>
                 <div class="paleta-grid">
                     {% for elem in tipos_elementos %}
                         <div class="paleta-item" data-tipo="{{ elem.identificador|upper }}" title="Clique ou arraste para inserir">
@@ -58,6 +59,137 @@
                             <span class="paleta-item-nome">{{ elem.nome }}</span>
                         </div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <!-- Tab: Design Global & Presets (Prompt 6) -->
+            <div class="sidebar-tab-content" id="tab-design">
+                <div class="design-form">
+                    <!-- Presets Rápidos de Estilo -->
+                    <div class="design-grupo">
+                        <span class="design-grupo-titulo">Temas & Presets</span>
+                        <div class="design-preset-grid">
+                            {% for preset in presets_design %}
+                                <div class="design-preset-card" data-preset='{{ preset|escapejs }}' title="Aplicar tema {{ preset.nome }}">
+                                    <div class="design-preset-swatches">
+                                        <div class="design-swatch" style="background: {{ preset.cor_primaria }};"></div>
+                                        <div class="design-swatch" style="background: {{ preset.cor_secundaria }};"></div>
+                                        <div class="design-swatch" style="background: {{ preset.cor_fundo }};"></div>
+                                        <div class="design-swatch" style="background: {{ preset.cor_superficie }};"></div>
+                                    </div>
+                                    <span class="design-preset-nome">{{ preset.nome }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Paleta de Cores -->
+                    <div class="design-grupo">
+                        <span class="design-grupo-titulo">Cores da Identidade</span>
+
+                        <div class="design-picker-row">
+                            <span class="design-picker-label">Cor Primária</span>
+                            <div class="design-picker-inputs">
+                                <input type="color" class="design-color-input" id="input-cor-primaria" value="{{ config_visual.cor_primaria }}">
+                                <input type="text" class="design-hex-input" id="hex-cor-primaria" value="{{ config_visual.cor_primaria }}">
+                            </div>
+                        </div>
+
+                        <div class="design-picker-row">
+                            <span class="design-picker-label">Cor Secundária</span>
+                            <div class="design-picker-inputs">
+                                <input type="color" class="design-color-input" id="input-cor-secundaria" value="{{ config_visual.cor_secundaria }}">
+                                <input type="text" class="design-hex-input" id="hex-cor-secundaria" value="{{ config_visual.cor_secundaria }}">
+                            </div>
+                        </div>
+
+                        <div class="design-picker-row">
+                            <span class="design-picker-label">Cor de Fundo</span>
+                            <div class="design-picker-inputs">
+                                <input type="color" class="design-color-input" id="input-cor-fundo" value="{{ config_visual.cor_fundo }}">
+                                <input type="text" class="design-hex-input" id="hex-cor-fundo" value="{{ config_visual.cor_fundo }}">
+                            </div>
+                        </div>
+
+                        <div class="design-picker-row">
+                            <span class="design-picker-label">Superfície / Cards</span>
+                            <div class="design-picker-inputs">
+                                <input type="color" class="design-color-input" id="input-cor-superficie" value="{{ config_visual.cor_superficie }}">
+                                <input type="text" class="design-hex-input" id="hex-cor-superficie" value="{{ config_visual.cor_superficie }}">
+                            </div>
+                        </div>
+
+                        <div class="design-picker-row">
+                            <span class="design-picker-label">Texto Principal</span>
+                            <div class="design-picker-inputs">
+                                <input type="color" class="design-color-input" id="input-cor-texto" value="{{ config_visual.cor_texto }}">
+                                <input type="text" class="design-hex-input" id="hex-cor-texto" value="{{ config_visual.cor_texto }}">
+                            </div>
+                        </div>
+
+                        <div class="design-picker-row">
+                            <span class="design-picker-label">Texto Secundário</span>
+                            <div class="design-picker-inputs">
+                                <input type="color" class="design-color-input" id="input-cor-texto-secundario" value="{{ config_visual.cor_texto_secundario }}">
+                                <input type="text" class="design-hex-input" id="hex-cor-texto-secundario" value="{{ config_visual.cor_texto_secundario }}">
+                            </div>
+                        </div>
+
+                        <!-- Indicador de Contraste WCAG -->
+                        <div id="design-contraste-badge" class="design-contrast-badge ok">
+                            ✓ Contraste Adequado
+                        </div>
+                    </div>
+
+                    <!-- Tipografia -->
+                    <div class="design-grupo">
+                        <span class="design-grupo-titulo">Tipografia</span>
+
+                        <div class="form-group-prop">
+                            <label class="prop-label">Fonte de Títulos</label>
+                            <select class="prop-select" id="select-fonte-titulos">
+                                {% for val, label in fontes_disponiveis %}
+                                    <option value="{{ val }}" {% if val == config_visual.fonte_titulos %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group-prop">
+                            <label class="prop-label">Fonte Principal (Textos)</label>
+                            <select class="prop-select" id="select-fonte-principal">
+                                {% for val, label in fontes_disponiveis %}
+                                    <option value="{{ val }}" {% if val == config_visual.fonte_principal %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Forma & Elevação -->
+                    <div class="design-grupo">
+                        <span class="design-grupo-titulo">Forma & Elevação</span>
+
+                        <div class="form-group-prop">
+                            <label class="prop-label">Arredondamento Padrão</label>
+                            <select class="prop-select" id="select-radius-padrao">
+                                <option value="0px" {% if config_visual.radius_padrao == "0px" %}selected{% endif %}>Reto (0px)</option>
+                                <option value="8px" {% if config_visual.radius_padrao == "8px" %}selected{% endif %}>Suave (8px)</option>
+                                <option value="12px" {% if config_visual.radius_padrao == "12px" %}selected{% endif %}>Padrão (12px)</option>
+                                <option value="20px" {% if config_visual.radius_padrao == "20px" %}selected{% endif %}>Arredondado (20px)</option>
+                                <option value="9999px" {% if config_visual.radius_padrao == "9999px" %}selected{% endif %}>Pílula (Pill)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group-prop">
+                            <label class="prop-label">Sombra Padrão</label>
+                            <select class="prop-select" id="select-sombra-padrao">
+                                <option value="nenhuma" {% if config_visual.sombra_padrao == "nenhuma" %}selected{% endif %}>Nenhuma</option>
+                                <option value="suave" {% if config_visual.sombra_padrao == "suave" %}selected{% endif %}>Suave</option>
+                                <option value="media" {% if config_visual.sombra_padrao == "media" %}selected{% endif %}>Média</option>
+                                <option value="forte" {% if config_visual.sombra_padrao == "forte" %}selected{% endif %}>Forte</option>
+                                <option value="glow" {% if config_visual.sombra_padrao == "glow" %}selected{% endif %}>Glow (Iluminado)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -153,6 +285,7 @@
 
 <!-- Scripts do Estúdio -->
 <script src="{% static 'editor/js/vendor/sortable.min.js' %}"></script>
+<script src="{% static 'editor/js/design_global.js' %}"></script>
 <script type="module">
     import { BioSiteEditorStudio } from "{% static 'editor/js/editor.js' %}";
 
@@ -160,6 +293,10 @@
         siteUuid: "{{ site.uuid }}",
         paginaId: {{ pagina_atual.id }}
     });
+
+    if (window.BioSiteDesignGlobal) {
+        window.BioSiteDesignGlobal.init("{{ site.uuid }}");
+    }
 </script>
 
 </body>

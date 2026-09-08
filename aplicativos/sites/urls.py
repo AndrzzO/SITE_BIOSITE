@@ -18,6 +18,8 @@ from .views_editor import (
     EditorElementoExcluirView,
     EditorElementoMoverView,
     EditorElementoSalvarView,
+    EditorMidiaListarView,
+    EditorMidiaUploadView,
     EditorPaginaCriarView,
     EditorSecaoCriarView,
     EditorSecaoDuplicarView,
@@ -25,6 +27,7 @@ from .views_editor import (
     EditorSecaoMoverView,
     EditorSecaoPropriedadesView,
     EditorStudioView,
+    EditorVisualConfigSalvarView,
     PreviewSiteView,
 )
 from .views_estrutura import (
@@ -49,9 +52,24 @@ urlpatterns = [
     path("<uuid:uuid>/duplicar/", ProjetoSiteDuplicarView.as_view(), name="site_duplicar"),
     path("<uuid:uuid>/arquivar/", ProjetoSiteArquivarView.as_view(), name="site_arquivar"),
     path("<uuid:uuid>/restaurar/", ProjetoSiteRestaurarView.as_view(), name="site_restaurar"),
-    # Editor Visual Mobile-First e Preview (Prompt 5)
+    # Editor Visual Mobile-First e Preview (Prompt 5 & 6)
     path("<uuid:uuid>/editor/", EditorStudioView.as_view(), name="site_editor"),
     path("<uuid:uuid>/editor/dados/", EditorDadosJsonView.as_view(), name="site_editor_dados"),
+    path(
+        "<uuid:uuid>/editor/design/salvar/",
+        EditorVisualConfigSalvarView.as_view(),
+        name="site_editor_design_salvar",
+    ),
+    path(
+        "<uuid:uuid>/editor/midia/upload/",
+        EditorMidiaUploadView.as_view(),
+        name="site_editor_midia_upload",
+    ),
+    path(
+        "<uuid:uuid>/editor/midia/listar/",
+        EditorMidiaListarView.as_view(),
+        name="site_editor_midia_listar",
+    ),
     path(
         "<uuid:uuid>/editor/elemento/salvar/",
         EditorElementoSalvarView.as_view(),

@@ -373,7 +373,58 @@ O estúdio de edição visual combina a simplicidade estrutural do **Google Site
 
 ---
 
-## 12. Qualidade de Código e Lint
+---
+
+## 12. Design System, Propriedades Visuais Avançadas e Componentes Premium (Prompt 6)
+
+O Prompt 6 eleva a plataforma de um editor funcional básico para um patamar de **qualidade visual comercial premium**, assegurando consistência estética, responsividade refinada e componentes especializados para BioSites profissionais.
+
+### 12.1 Design Tokens e CSS Custom Properties
+- **ConfiguracaoVisualProjeto:** Modelo acoplado 1:1 a cada `ProjetoSite`, armazenando tokens globais de identidade visual:
+  - Cores: `--cor-primaria`, `--cor-secundaria`, `--cor-fundo`, `--cor-superficie`, `--cor-texto`, `--cor-texto-secundario`
+  - Tipografia: `--fonte-principal` e `--fonte-titulos` (Inter, Roboto, Plus Jakarta Sans, Poppins, Playfair Display, Montserrat, etc.)
+  - Geometria e Elevação: `--radius-padrao` (0px a 9999px) e `--sombra-padrao` (nenhuma, suave, media, forte, glow)
+  - Largura Máxima Mobile: `--largura-maxima-mobile` (padrão 390px)
+- **Injeção de Tokens CSS (`aplicativos/sites/renderer.py`):** Tanto o canvas do estúdio quanto a rota de preview recebem um bloco `<style id="biosite-tokens-css">` gerado por `gerar_bloco_css()`, aplicando variáveis sobre `:root, .biosite-canvas-root` para paridade visual rigorosa.
+
+### 12.2 Herança de Estilos e Presets de Design
+- **Hierarquia de Estilos:** Projeto (Global) &rarr; Seção &rarr; Container &rarr; Elemento.
+- **Botão "Usar padrão do projeto":** Em cada propriedade no inspetor lateral (cores, bordas, sombras, fontes), campos vazios herdam dinamicamente as variáveis CSS correspondentes, permitindo reset instantâneo.
+- **Temas & Presets Rápidos:** 5 combinações prontas para aplicação em um clique no estúdio: Clean Light, Dark Premium, Modern Violet, Warm Elegance e Minimalist Gray.
+- **Verificação de Contraste WCAG 2.1:** Algoritmo matemático integrado que analisa em tempo real o contraste entre texto e fundo (`(L1 + 0.05) / (L2 + 0.05)`), exibindo badges informativos no painel sem bloquear a criatividade do usuário.
+
+### 12.3 Catálogo Expandido de Componentes Premium
+O registro centralizado (`aplicativos/sites/elementos/`) foi ampliado com componentes específicos para alta conversão mobile:
+- **WhatsApp (`WHATSAPP`):** Normalização automática de números telefônicos para formato internacional, geração de link seguro `https://wa.me/<numero>?text=<mensagem>` e suporte a botão fixo flutuante (`cta_flutuante`).
+- **Telefone (`TELEFONE`):** Botão formatado com ação nativa `tel:<numero>`.
+- **E-mail (`EMAIL`):** Botão com validação de formato e geração de link `mailto:<email>?subject=<assunto>`.
+- **Website / Link Externo (`WEBSITE`):** Botão de link com suporte a rótulo, URL e segurança `rel="noopener noreferrer"`.
+- **Redes Sociais (`REDES_SOCIAIS`):** Barra multicanal suportando Instagram, Facebook, TikTok, LinkedIn, YouTube, Twitter/X e WhatsApp em modos ícones ou botões completos.
+- **Agendamento Externo (`AGENDAMENTO_EXTERNO`):** Botão com destaque visual e integração com Google Agenda, Calendly ou URLs customizadas.
+- **Localização / Mapa (`MAPA`):** Link direto para pesquisa de endereço no Google Maps (`https://www.google.com/maps/search/?api=1&query=...`), sem custos de APIs pagas.
+- **Lista de Serviços (`SERVICOS`):** Cards de apresentação de serviços e produtos com título, descrição, badge de preço e botão CTA dedicado.
+- **Galeria de Fotos (`GALERIA`):** Layouts em grade responsiva (1 a 4 colunas) ou carrossel horizontal com suporte nativo a touch/swipe (`scroll-snap`).
+- **Avatar de Perfil (`AVATAR`):** Foto de perfil ou logotipo em formas circular, arredondada ou quadrada, com bordas configuráveis e suporte a placeholder SVG.
+- **Divisor Horizontal (`DIVISOR`):** Linhas de separação personalizadas (sólida, tracejada, pontilhada, dupla) com controle de espessura e largura.
+- **Biblioteca Interna de Ícones SVG (`aplicativos/sites/elementos/icones.py`):** SVGs otimizados sem dependência de fontes de ícones externas.
+
+### 12.4 Pipeline de Upload Seguro e Otimização de Mídia
+- **Modelo `MidiaSite`:** Armazenamento centralizado de ativos de mídia por projeto (`upload_to="sites/midias/%Y/%m/"`), com rastreamento de dimensões, tamanho e tipo.
+- **Sanitização com Pillow (`aplicativos/sites/servicos_midia.py`):**
+  - Verificação real de bytes via `Image.open().verify()` contra executáveis disfarçados.
+  - Bloqueio estrito de arquivos `.svg` em uploads de usuários para eliminar vetores de SVG-XSS.
+  - Correção automática de rotação EXIF mobile via `ImageOps.exif_transpose()`.
+  - Remoção completa de metadados sensíveis (geolocalização, dados de câmera).
+  - Redimensionamento inteligente para telas mobile (máximo 1200px) e conversão automática para formato moderno **WebP** com compressão de alta qualidade.
+  - Limite de 10 MB por upload e validação de isolamento por projeto (IDOR).
+
+### 12.5 Animações e Movimento Suave
+- Transições sutis (`fade`, `fade-up`, `scale`, `slide`) implementadas em CSS puro.
+- Suporte total a acessibilidade motora com desativação automática via `@media (prefers-reduced-motion: reduce)`.
+
+---
+
+## 13. Qualidade de Código e Lint
 
 Para verificar conformidade com a PEP 8:
 ```bash
@@ -385,20 +436,26 @@ Para formatar automaticamente o código:
 ruff format .
 ```
 
+Para executar a suíte completa de testes automatizados:
+```bash
+python manage.py test --settings=configuracao.settings.teste
+```
+
 ---
 
-## 13. Próximas Etapas (Prompts 6 a 12)
+## 14. Próximas Etapas (Prompts 7 a 12)
 
 1. **Prompt 1:** Fundação, Arquitetura e Configuração do Projeto *(Concluído)*
 2. **Prompt 2:** Autenticação Privada e Workspace "Meus Sites" *(Concluído)*
 3. **Prompt 3:** Clientes, Projetos de Site e Workspace "Meus Sites" Funcional *(Concluído)*
 4. **Prompt 4:** Motor Estrutural de Páginas, Seções, Containers e Elementos *(Concluído)*
 5. **Prompt 5:** Editor Visual Mobile-First e Preview *(Concluído)*
-6. **Prompt 6:** Componentes e Blocos Específicos de BioSite
-7. **Prompt 7:** Temas, Tipografia e Design System
+6. **Prompt 6:** Design System, Propriedades Visuais Avançadas e Componentes Premium *(Concluído — 146 testes)*
+7. **Prompt 7:** Biblioteca de Modelos (Templates), Blocos Prontos e Pré-visualização de Temas
 8. **Prompt 8:** Integração e Redirecionamento NFC
 9. **Prompt 9:** QR Code Dinâmico e Exportação
 10. **Prompt 10:** Analytics e Telemetria de Visitas
 11. **Prompt 11:** Hardening, Performance e Preparação para Produção
 12. **Prompt 12:** Auditoria e Testes Finais
+
 

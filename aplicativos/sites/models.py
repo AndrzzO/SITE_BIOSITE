@@ -1,4 +1,4 @@
-"""Modelos para gerenciamento de projetos de sites, páginas, seções, containers e elementos."""
+import re
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -8,6 +8,14 @@ from django.utils.translation import gettext_lazy as _
 from aplicativos.core.models import ModeloBase
 
 from .elementos.registry import registro_elementos
+
+HEX_COLOR_REGEX = re.compile(r"^#(?:[0-9a-fA-F]{3}){1,2}$")
+
+
+def validar_cor_hex(valor: str) -> None:
+    """Valida se o valor informado é uma cor hexadecimal válida (#RGB ou #RRGGBB)."""
+    if valor and not HEX_COLOR_REGEX.match(str(valor).strip()):
+        raise ValidationError(_("Cor hexadecimal inválida. Utilize o formato #RGB ou #RRGGBB."))
 
 
 class ProjetoSite(ModeloBase):
@@ -431,3 +439,224 @@ class ElementoSite(ModeloBase):
         """Renderiza o elemento em HTML sanitizado através de sua definição de tipo."""
         definicao = registro_elementos.obter(self.tipo)
         return definicao.render(self, contexto)
+
+
+class ConfiguracaoVisualProjeto(ModeloBase):
+    """
+    Configuração visual global do BioSite (Design System).
+
+    Define os tokens de cores, tipografia, bordas, sombras e layout para
+    garantir coerência visual em todas as páginas e componentes do projeto.
+    """
+
+    FONTE_CHOICES = [
+        ("Inter, sans-serif", "Inter (Moderna / Clean)"),
+        ("Roboto, sans-serif", "Roboto (Equilibrada)"),
+        ("Poppins, sans-serif", "Poppins (Geométrica / Tech)"),
+        ("Montserrat, sans-serif", "Montserrat (Marcante)"),
+        ("Playfair Display, serif", "Playfair Display (Elegante / Editorial)"),
+        ("Plus Jakarta Sans, sans-serif", "Plus Jakarta Sans (Moderna / Premium)"),
+        ("-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", "Sistema (Nativa)"),
+    ]
+
+    projeto = models.OneToOneField(
+        ProjetoSite,
+        on_delete=models.CASCADE,
+        related_name="configuracao_visual",
+        verbose_name=_("Projeto"),
+    )
+
+    # Paleta de Cores do Projeto
+    cor_primaria = models.CharField(
+        _("Cor Primária"),
+        max_length=20,
+        default="#2563eb",
+        validators=[validar_cor_hex],
+        help_text=_("Cor de destaque para botões principais e elementos ativos."),
+    )
+    cor_secundaria = models.CharField(
+        _("Cor Secundária"),
+        max_length=20,
+        default="#38bdf8",
+        validators=[validar_cor_hex],
+        help_text=_("Cor de apoio para detalhes, tags e acentos."),
+    )
+    cor_fundo = models.CharField(
+        _("Cor de Fundo"),
+        max_length=20,
+        default="#ffffff",
+        validators=[validar_cor_hex],
+        help_text=_("Cor de fundo da página do BioSite."),
+    )
+    cor_superficie = models.CharField(
+        _("Cor de Superfície"),
+        max_length=20,
+        default="#f8fafc",
+        validators=[validar_cor_hex],
+        help_text=_("Cor de fundo para cards, containers e caixas."),
+    )
+    cor_texto = models.CharField(
+        _("Cor do Texto"),
+        max_length=20,
+        default="#0f172a",
+        validators=[validar_cor_hex],
+        help_text=_("Cor principal para títulos e textos corridos."),
+    )
+    cor_texto_secundario = models.CharField(
+        _("Cor do Texto Secundário"),
+        max_length=20,
+        default="#64748b",
+        validators=[validar_cor_hex],
+        help_text=_("Cor para subtítulos, legendas e metadados."),
+    )
+
+    # Tipografia Global
+    fonte_principal = models.CharField(
+        _("Fonte Principal"),
+        max_length=100,
+        choices=FONTE_CHOICES,
+        default="Inter, sans-serif",
+    )
+    fonte_titulos = models.CharField(
+        _("Fonte de Títulos"),
+        max_length=100,
+        choices=FONTE_CHOICES,
+        default="Inter, sans-serif",
+    )
+
+    # Presets de Forma e Elevação
+    radius_padrao = models.CharField(
+        _("Raio de Borda Padrão"),
+        max_length=20,
+        default="12px",
+        help_text=_("Ex: 0px, 8px, 12px, 20px, 9999px (pill)."),
+    )
+    sombra_padrao = models.CharField(
+        _("Sombra Padrão"),
+        max_length=20,
+        default="suave",
+        help_text=_("nenhuma, suave, media, forte, glow."),
+    )
+    largura_maxima_mobile = models.PositiveIntegerField(
+        _("Largura Máxima Mobile"),
+        default=390,
+        help_text=_("Largura de referência mobile (320px a 430px)."),
+    )
+
+    # Configurações extras extensíveis
+    configuracoes_extras = models.JSONField(
+        _("Configurações Extras"),
+        default=dict,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = _("configuração visual do projeto")
+        verbose_name_plural = _("configurações visuais dos projetos")
+
+    def __str__(self) -> str:
+        return f"Design System: {self.projeto.nome}"
+
+    def obter_tokens_css(self) -> dict[str, str]:
+        """Gera dicionário de variáveis CSS prontas para injeção no canvas e preview."""
+        mapeamento_sombras = {
+            "nenhuma": "none",
+            "suave": "0 2px 8px -2px rgba(0, 0, 0, 0.08), 0 1px 4px -1px rgba(0, 0, 0, 0.04)",
+            "media": "0 6px 16px -4px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.06)",
+            "forte": "0 12px 28px -6px rgba(0, 0, 0, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.1)",
+            "glow": f"0 0 24px {self.cor_primaria}40",
+        }
+        sombra_css = mapeamento_sombras.get(self.sombra_padrao, mapeamento_sombras["suave"])
+
+        return {
+            "--cor-primaria": self.cor_primaria,
+            "--cor-secundaria": self.cor_secundaria,
+            "--cor-fundo": self.cor_fundo,
+            "--cor-superficie": self.cor_superficie,
+            "--cor-texto": self.cor_texto,
+            "--cor-texto-secundario": self.cor_texto_secundario,
+            "--fonte-principal": self.fonte_principal,
+            "--fonte-titulos": self.fonte_titulos,
+            "--radius-padrao": self.radius_padrao,
+            "--sombra-padrao": sombra_css,
+            "--largura-maxima-mobile": f"{self.largura_maxima_mobile}px",
+        }
+
+    def gerar_bloco_css(self) -> str:
+        """Retorna as CSS custom properties prontas para uso em tags <style>."""
+        tokens = self.obter_tokens_css()
+        linhas = [f"    {chave}: {valor};" for chave, valor in tokens.items()]
+        return ":root, .biosite-canvas-root {\n" + "\n".join(linhas) + "\n}"
+
+
+def garantir_configuracao_visual(projeto: ProjetoSite) -> ConfiguracaoVisualProjeto:
+    """Garante de forma idempotente que o projeto possua uma ConfiguracaoVisualProjeto."""
+    config, _ = ConfiguracaoVisualProjeto.objects.get_or_create(projeto=projeto)
+    return config
+
+
+class MidiaSite(ModeloBase):
+    """
+    Armazenamento e metadados de mídias enviadas para o BioSite.
+
+    Validadas contra executáveis e arquivos maliciosos, com sanitização EXIF
+    e otimização automática para telas de smartphone.
+    """
+
+    class Tipo(models.TextChoices):
+        IMAGEM = "IMAGEM", _("Imagem")
+        AVATAR = "AVATAR", _("Foto de Perfil / Avatar")
+        ICONE = "ICONE", _("Ícone")
+        LOGO = "LOGO", _("Logotipo")
+
+    projeto = models.ForeignKey(
+        ProjetoSite,
+        on_delete=models.CASCADE,
+        related_name="midias",
+        verbose_name=_("Projeto"),
+    )
+    arquivo = models.ImageField(
+        _("Arquivo"),
+        upload_to="sites/midias/%Y/%m/",
+    )
+    nome_original = models.CharField(
+        _("Nome Original"),
+        max_length=255,
+    )
+    mime_type = models.CharField(
+        _("Tipo MIME"),
+        max_length=100,
+        default="image/jpeg",
+    )
+    tamanho_bytes = models.PositiveIntegerField(
+        _("Tamanho (bytes)"),
+        default=0,
+    )
+    largura = models.PositiveIntegerField(
+        _("Largura (px)"),
+        default=0,
+    )
+    altura = models.PositiveIntegerField(
+        _("Altura (px)"),
+        default=0,
+    )
+    tipo = models.CharField(
+        _("Tipo de Mídia"),
+        max_length=20,
+        choices=Tipo.choices,
+        default=Tipo.IMAGEM,
+    )
+
+    class Meta:
+        verbose_name = _("mídia do site")
+        verbose_name_plural = _("mídias do site")
+        ordering = ["-criado_em"]
+
+    def __str__(self) -> str:
+        return f"{self.nome_original} ({self.projeto.nome})"
+
+    @property
+    def url(self) -> str:
+        if self.arquivo:
+            return self.arquivo.url
+        return ""

@@ -36,13 +36,19 @@ class DefinicaoElemento(ABC):
             "cor_fundo",
             "cor_borda",
             "largura_borda",
+            "estilo_borda",
             "raio_borda",
+            "sombra",
             "margem_topo",
             "margem_baixo",
             "padding_topo",
             "padding_baixo",
             "padding_lateral",
             "opacidade",
+            "largura_maxima",
+            "gap",
+            "animacao",
+            "backdrop_filter",
             # Nomes CSS equivalentes
             "text-align",
             "font-size",
@@ -51,7 +57,9 @@ class DefinicaoElemento(ABC):
             "background-color",
             "border-color",
             "border-width",
+            "border-style",
             "border-radius",
+            "box-shadow",
             "margin-top",
             "margin-bottom",
             "padding-top",
@@ -59,6 +67,9 @@ class DefinicaoElemento(ABC):
             "padding-left",
             "padding-right",
             "opacity",
+            "max-width",
+            "animation",
+            "backdrop-filter",
         }
     )
 
@@ -66,6 +77,9 @@ class DefinicaoElemento(ABC):
     PESOS_FONTE_PERMITIDOS = frozenset(
         {"normal", "bold", "300", "400", "500", "600", "700", "800", "900"}
     )
+    ESTILOS_BORDA_PERMITIDOS = frozenset({"none", "solid", "dashed", "dotted"})
+    SOMBRAS_PERMITIDAS = frozenset({"none", "suave", "media", "forte", "glow"})
+    ANIMACOES_PERMITIDAS = frozenset({"none", "fade", "fade-up", "scale", "slide"})
 
     @abstractmethod
     def conteudo_padrao(self) -> dict[str, Any]:
@@ -154,6 +168,30 @@ class DefinicaoElemento(ABC):
                             _("Cor hexadecimal inválida: '%(valor)s'."), params={"valor": valor}
                         )
 
+                if (
+                    prop in ["estilo_borda", "border-style"]
+                    and valor not in self.ESTILOS_BORDA_PERMITIDOS
+                ):
+                    raise ValidationError(
+                        _("Estilo de borda inválido: '%(valor)s'."), params={"valor": valor}
+                    )
+
+                if (
+                    prop in ["sombra", "box-shadow"]
+                    and str(valor).lower() not in self.SOMBRAS_PERMITIDAS
+                ):
+                    raise ValidationError(
+                        _("Preset de sombra inválido: '%(valor)s'."), params={"valor": valor}
+                    )
+
+                if (
+                    prop in ["animacao", "animation"]
+                    and str(valor).lower() not in self.ANIMACOES_PERMITIDAS
+                ):
+                    raise ValidationError(
+                        _("Preset de animação inválido: '%(valor)s'."), params={"valor": valor}
+                    )
+
                 if prop in [
                     "tamanho_fonte",
                     "margem_topo",
@@ -186,3 +224,44 @@ class DefinicaoElemento(ABC):
     def render(self, elemento: Any, contexto: dict[str, Any] | None = None) -> str:
         """Renderiza o elemento em HTML seguro."""
         ...
+
+
+def calcular_luminancia_relativa(hex_cor: str) -> float:
+    """Calcula a luminância relativa (0.0 a 1.0) conforme a especificação WCAG 2.1."""
+    if not hex_cor:
+        return 0.5
+    hex_clean = hex_cor.strip().lstrip("#")
+    if len(hex_clean) == 3:
+        hex_clean = "".join(c * 2 for c in hex_clean)
+    if len(hex_clean) != 6:
+        return 0.5
+    try:
+        r = int(hex_clean[0:2], 16) / 255.0
+        g = int(hex_clean[2:4], 16) / 255.0
+        b = int(hex_clean[4:6], 16) / 255.0
+    except ValueError:
+        return 0.5
+
+    def _ajustar(c: float) -> float:
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * _ajustar(r) + 0.7152 * _ajustar(g) + 0.0722 * _ajustar(b)
+
+
+def calcular_contraste_wcag(cor_texto_hex: str, cor_fundo_hex: str) -> dict[str, Any]:
+    """
+    Calcula a taxa de contraste (1:1 a 21:1) entre texto e fundo.
+    Retorna proporção e flags de conformidade WCAG AA.
+    """
+    lum1 = calcular_luminancia_relativa(cor_texto_hex)
+    lum2 = calcular_luminancia_relativa(cor_fundo_hex)
+    mais_clara = max(lum1, lum2)
+    mais_escura = min(lum1, lum2)
+    ratio = (mais_clara + 0.05) / (mais_escura + 0.05)
+    ratio_formatado = round(ratio, 2)
+    return {
+        "ratio": ratio_formatado,
+        "adequado_texto_normal": ratio >= 4.5,
+        "adequado_texto_grande": ratio >= 3.0,
+        "alerta": ratio < 3.0,
+    }

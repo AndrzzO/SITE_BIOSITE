@@ -1,5 +1,5 @@
 /**
- * propriedades.js — Painel Lateral Contextual de Propriedades e Estilos Mobile-First
+ * propriedades.js — Painel Lateral Contextual de Propriedades e Estilos Mobile-First (Prompt 6)
  */
 
 export class PropriedadesManager {
@@ -36,9 +36,10 @@ export class PropriedadesManager {
     }
 
     renderizarPropriedadesElemento(id, el) {
-        const tipoElem = el.dataset.tipo;
-        const textoAtual = el.querySelector('.elemento-titulo, .elemento-texto, .elemento-botao')?.innerText || '';
-        const urlAtual = el.querySelector('a')?.getAttribute('href') || '';
+        const tipoElem = (el.dataset.tipo || '').toUpperCase();
+        const textoAtual = el.querySelector('.elemento-titulo, .elemento-texto, .elemento-botao span, .servico-titulo')?.innerText || '';
+        const linkEl = el.querySelector('a');
+        const urlAtual = linkEl ? linkEl.getAttribute('href') || '' : '';
 
         let camposEspecificosHtml = '';
 
@@ -76,16 +77,194 @@ export class PropriedadesManager {
                     <input type="text" class="prop-input" id="prop-campo-url" value="${this.escapeHtml(urlAtual)}" placeholder="https://, tel:, mailto:">
                 </div>
                 <div class="form-group-prop">
-                    <label class="prop-label">Cor de Fundo do Botão</label>
-                    <input type="color" class="prop-input" id="prop-estilo-cor_fundo" value="#2563eb" style="height: 38px; padding: 2px;">
+                    <label class="prop-label">Estilo do Botão</label>
+                    <select class="prop-select" id="prop-campo-estilo_visual">
+                        <option value="solido">Sólido (Cor Primária)</option>
+                        <option value="outline">Contorno (Outline)</option>
+                        <option value="ghost">Transparente (Ghost)</option>
+                        <option value="glass">Vidro (Glassmorphism)</option>
+                    </select>
                 </div>
                 <div class="form-group-prop">
-                    <label class="prop-label">Cor do Texto</label>
-                    <input type="color" class="prop-input" id="prop-estilo-cor_texto" value="#ffffff" style="height: 38px; padding: 2px;">
+                    <label class="prop-label">
+                        <input type="checkbox" id="prop-campo-largura_total" checked> Largura Total (Mobile-First)
+                    </label>
+                </div>
+            `;
+        } else if (tipoElem === 'WHATSAPP') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Número (com DDD)</label>
+                    <input type="text" class="prop-input" id="prop-campo-numero" value="5511999999999" placeholder="Ex: 5511999999999">
                 </div>
                 <div class="form-group-prop">
-                    <label class="prop-label">Arredondamento da Borda (px)</label>
-                    <input type="number" class="prop-input" id="prop-estilo-raio_borda" value="8" min="0" max="50">
+                    <label class="prop-label">Texto do Botão</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto" value="${this.escapeHtml(textoAtual || 'Falar no WhatsApp')}">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Mensagem Pré-definida</label>
+                    <input type="text" class="prop-input" id="prop-campo-mensagem" value="Olá! Gostaria de mais informações.">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Tipo de Exibição</label>
+                    <select class="prop-select" id="prop-campo-estilo_botao">
+                        <option value="solido">Botão Normal na Página</option>
+                        <option value="flutuante">Botão Flutuante Fixo (Canto)</option>
+                    </select>
+                </div>
+            `;
+        } else if (tipoElem === 'TELEFONE') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Número de Telefone</label>
+                    <input type="text" class="prop-input" id="prop-campo-numero" value="(11) 99999-9999">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Texto do Botão</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto" value="${this.escapeHtml(textoAtual || 'Ligar Agora')}">
+                </div>
+            `;
+        } else if (tipoElem === 'EMAIL') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Endereço de E-mail</label>
+                    <input type="email" class="prop-input" id="prop-campo-email" value="contato@meubiosite.com">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Texto do Botão</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto" value="${this.escapeHtml(textoAtual || 'Enviar E-mail')}">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Assunto Opcional</label>
+                    <input type="text" class="prop-input" id="prop-campo-assunto" value="Contato via BioSite">
+                </div>
+            `;
+        } else if (tipoElem === 'WEBSITE') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">URL do Site</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" value="${this.escapeHtml(urlAtual || 'https://')}">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Texto do Botão</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto" value="${this.escapeHtml(textoAtual || 'Acessar Site')}">
+                </div>
+            `;
+        } else if (tipoElem === 'REDES_SOCIAIS') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Formato de Exibição</label>
+                    <select class="prop-select" id="prop-campo-formato">
+                        <option value="icones">Apenas Ícones</option>
+                        <option value="botoes">Botões com Texto</option>
+                    </select>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Instagram URL</label>
+                    <input type="url" class="prop-input prop-social-link" data-rede="instagram" value="https://instagram.com/">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">WhatsApp URL</label>
+                    <input type="url" class="prop-input prop-social-link" data-rede="whatsapp" value="https://wa.me/5511999999999">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">LinkedIn URL</label>
+                    <input type="url" class="prop-input prop-social-link" data-rede="linkedin" value="https://linkedin.com/">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">YouTube URL</label>
+                    <input type="url" class="prop-input prop-social-link" data-rede="youtube" value="https://youtube.com/">
+                </div>
+            `;
+        } else if (tipoElem === 'AGENDAMENTO_EXTERNO') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Texto do Botão</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto" value="${this.escapeHtml(textoAtual || '📅 Agendar Atendimento')}">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">URL do Google Calendar / Agendamento</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" value="${this.escapeHtml(urlAtual || 'https://calendar.google.com/')}" placeholder="https://calendar.google.com/...">
+                    <span style="font-size: 0.65rem; color: var(--studio-text-muted);">Link externo seguro para seu calendário</span>
+                </div>
+            `;
+        } else if (tipoElem === 'MAPA') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Endereço Completo</label>
+                    <input type="text" class="prop-input" id="prop-campo-endereco" value="Av. Paulista, 1000 - São Paulo, SP">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Texto do Botão</label>
+                    <input type="text" class="prop-input" id="prop-campo-texto" value="${this.escapeHtml(textoAtual || '📍 Ver no Google Maps')}">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Link Personalizado (Opcional)</label>
+                    <input type="url" class="prop-input" id="prop-campo-url_personalizada" placeholder="https://maps.google.com/...">
+                </div>
+            `;
+        } else if (tipoElem === 'AVATAR') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">URL da Imagem de Perfil</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" placeholder="https://...">
+                    <button type="button" class="btn-upload-midia" style="margin-top: 0.35rem;" id="btn-abrir-midia">📁 Escolher da Galeria de Mídias</button>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Forma do Avatar</label>
+                    <select class="prop-select" id="prop-campo-forma">
+                        <option value="circulo">Circular (50%)</option>
+                        <option value="arredondado">Arredondado Suave</option>
+                        <option value="quadrado">Quadrado</option>
+                    </select>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Tamanho (px)</label>
+                    <input type="range" class="prop-input" id="prop-campo-tamanho" min="48" max="180" value="100" oninput="document.getElementById('val-tamanho-avatar').textContent = this.value + 'px'">
+                    <span id="val-tamanho-avatar" style="font-size: 0.75rem; color: var(--studio-text-muted);">100px</span>
+                </div>
+            `;
+        } else if (tipoElem === 'DIVISOR') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">Estilo da Linha</label>
+                    <select class="prop-select" id="prop-campo-estilo">
+                        <option value="solid">Sólida Contínua</option>
+                        <option value="dashed">Tracejada (Dashed)</option>
+                        <option value="dotted">Pontilhada (Dotted)</option>
+                    </select>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Largura</label>
+                    <select class="prop-select" id="prop-campo-largura">
+                        <option value="100%">100% (Largura Total)</option>
+                        <option value="75%">75%</option>
+                        <option value="50%">50%</option>
+                        <option value="25%">25%</option>
+                    </select>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Espessura (px)</label>
+                    <input type="number" class="prop-input" id="prop-campo-espessura" value="1" min="1" max="6">
+                </div>
+            `;
+        } else if (tipoElem === 'IMAGEM') {
+            camposEspecificosHtml = `
+                <div class="form-group-prop">
+                    <label class="prop-label">URL da Imagem</label>
+                    <input type="url" class="prop-input" id="prop-campo-url" placeholder="https://...">
+                    <button type="button" class="btn-upload-midia" style="margin-top: 0.35rem;" id="btn-abrir-midia">📁 Escolher da Galeria de Mídias</button>
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Texto Alternativo (Alt)</label>
+                    <input type="text" class="prop-input" id="prop-campo-alt_text" placeholder="Descreva a imagem">
+                </div>
+                <div class="form-group-prop">
+                    <label class="prop-label">Ajuste (Fit)</label>
+                    <select class="prop-select" id="prop-campo-fit">
+                        <option value="cover">Preencher e Cortar (Cover)</option>
+                        <option value="contain">Conter Completa (Contain)</option>
+                    </select>
                 </div>
             `;
         } else if (tipoElem === 'ESPACADOR') {
@@ -96,49 +275,64 @@ export class PropriedadesManager {
                     <span id="val-altura" style="font-size: 0.75rem; color: var(--studio-text-muted);">24px</span>
                 </div>
             `;
-        } else if (tipoElem === 'IMAGEM') {
-            camposEspecificosHtml = `
-                <div class="form-group-prop">
-                    <label class="prop-label">URL da Imagem</label>
-                    <input type="text" class="prop-input" id="prop-campo-url" placeholder="https://exemplo.com/foto.jpg">
-                </div>
-                <div class="form-group-prop">
-                    <label class="prop-label">Texto Alternativo (Alt)</label>
-                    <input type="text" class="prop-input" id="prop-campo-alt" placeholder="Descrição acessível da imagem">
-                </div>
-            `;
         }
 
         this.conteudoEl.innerHTML = `
             <div class="propriedades-header">
-                <span class="propriedades-titulo">${tipoElem}</span>
-                <div style="display: flex; gap: 0.3rem;">
-                    <button type="button" class="btn-acao-elem ${this.escopoAtivo === 'base' ? 'is-selected' : ''}" id="btn-escopo-mobile" title="Edita base mobile (390px)">📱 Mobile</button>
-                    <button type="button" class="btn-acao-elem ${this.escopoAtivo === 'desktop' ? 'is-selected' : ''}" id="btn-escopo-desktop" title="Override para telas amplas">🖥 Desktop</button>
-                </div>
+                <span class="propriedades-titulo">Elemento: ${tipoElem}</span>
+                <span style="font-size: 0.75rem; color: var(--studio-accent);">#${id}</span>
             </div>
+
             <div class="propriedades-form">
+                <!-- Seletor de Escopo: Mobile / Desktop -->
+                <div class="prop-btn-group" style="margin-bottom: 0.5rem;">
+                    <button type="button" class="${this.escopoAtivo === 'base' ? 'active' : ''}" id="btn-escopo-mobile">📱 Mobile (Base)</button>
+                    <button type="button" class="${this.escopoAtivo === 'desktop' ? 'active' : ''}" id="btn-escopo-desktop">💻 Desktop</button>
+                </div>
+
+                <!-- Campos Específicos do Tipo -->
                 ${camposEspecificosHtml}
 
-                <div class="form-group-prop">
-                    <label class="prop-label">Alinhamento do Texto</label>
-                    <div class="prop-btn-group" id="group-alinhamento">
-                        <button type="button" data-val="left">Esq</button>
-                        <button type="button" data-val="center">Centro</button>
-                        <button type="button" data-val="right">Dir</button>
+                <!-- Estilos Globais vs Locais -->
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--studio-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <span class="prop-label" style="margin: 0;">Estilos & Efeitos</span>
+                        <button type="button" id="btn-reset-estilos" style="background: none; border: none; font-size: 0.7rem; color: var(--studio-accent); cursor: pointer;" title="Remove overrides locais e restaura valores do Design System">
+                            ↺ Usar padrão do projeto
+                        </button>
+                    </div>
+
+                    <div class="form-group-prop">
+                        <label class="prop-label">Cor de Fundo</label>
+                        <input type="color" class="prop-input" id="prop-estilo-cor_fundo" style="height: 36px; padding: 2px;">
+                    </div>
+                    <div class="form-group-prop">
+                        <label class="prop-label">Cor do Texto</label>
+                        <input type="color" class="prop-input" id="prop-estilo-cor_texto" style="height: 36px; padding: 2px;">
+                    </div>
+                    <div class="form-group-prop">
+                        <label class="prop-label">Sombra</label>
+                        <select class="prop-select" id="prop-estilo-sombra">
+                            <option value="none">Nenhuma</option>
+                            <option value="suave">Suave</option>
+                            <option value="media">Média</option>
+                            <option value="forte">Forte</option>
+                            <option value="glow">Glow Iluminado</option>
+                        </select>
+                    </div>
+                    <div class="form-group-prop">
+                        <label class="prop-label">Animação de Entrada</label>
+                        <select class="prop-select" id="prop-estilo-animacao">
+                            <option value="none">Nenhuma</option>
+                            <option value="fade">Fade (Suave)</option>
+                            <option value="fade-up">Fade Up (Subida)</option>
+                            <option value="scale">Zoom / Scale</option>
+                            <option value="slide">Slide Lateral</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="form-group-prop">
-                    <label class="prop-label">Tamanho da Fonte (px)</label>
-                    <input type="number" class="prop-input" id="prop-estilo-tamanho_fonte" min="10" max="96" placeholder="Padrão">
-                </div>
-
-                <div class="form-group-prop">
-                    <label class="prop-label">Cor do Texto</label>
-                    <input type="color" class="prop-input" id="prop-estilo-cor_texto" style="height: 38px; padding: 2px;">
-                </div>
-
+                <!-- Ações -->
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--studio-border); display: flex; justify-content: space-between;">
                     <button type="button" class="btn-acao-elem" id="btn-prop-duplicar">⎘ Duplicar</button>
                     <button type="button" class="btn-acao-elem btn-danger" id="btn-prop-excluir">✕ Excluir</button>
@@ -150,7 +344,6 @@ export class PropriedadesManager {
     }
 
     vincularEventosElemento(id, el, tipoElem) {
-        // Alternador de Escopo Mobile / Desktop
         document.getElementById('btn-escopo-mobile')?.addEventListener('click', () => {
             this.escopoAtivo = 'base';
             this.renderizarPropriedadesElemento(id, el);
@@ -160,57 +353,79 @@ export class PropriedadesManager {
             this.renderizarPropriedadesElemento(id, el);
         });
 
-        // Eventos de Conteúdo
-        const inputTexto = document.getElementById('prop-campo-texto');
-        if (inputTexto) {
-            inputTexto.addEventListener('input', (e) => {
-                const novoTexto = e.target.value;
-                const textoAlvo = el.querySelector('.elemento-titulo, .elemento-texto, .elemento-botao');
-                if (textoAlvo) textoAlvo.innerText = novoTexto;
+        // Reset de override para usar tokens do Design System
+        document.getElementById('btn-reset-estilos')?.addEventListener('click', () => {
+            const estilos = {};
+            estilos[this.escopoAtivo] = {
+                cor_fundo: '',
+                cor_texto: '',
+                sombra: 'none',
+                animacao: 'none',
+            };
+            el.style.backgroundColor = '';
+            el.style.color = '';
+            el.style.boxShadow = '';
+            el.style.animation = '';
 
-                this.editor.autosaveManager.agendarSalvamento({
-                    elemento_id: id,
-                    conteudo: { texto: novoTexto }
-                });
+            this.editor.autosaveManager.agendarSalvamento({
+                elemento_id: id,
+                estilos: estilos,
             });
-        }
+        });
 
-        const inputUrl = document.getElementById('prop-campo-url');
-        if (inputUrl) {
-            inputUrl.addEventListener('change', (e) => {
-                const novaUrl = e.target.value;
-                this.editor.autosaveManager.agendarSalvamento({
-                    elemento_id: id,
-                    conteudo: { url: novaUrl }
-                });
-            });
-        }
+        // Sincronização genérica de campos de conteúdo
+        const camposConteudo = [
+            'texto', 'url', 'numero', 'mensagem', 'email', 'assunto',
+            'endereco', 'url_personalizada', 'forma', 'tamanho', 'altura',
+            'estilo', 'largura', 'espessura', 'fit', 'alt_text', 'estilo_visual',
+            'estilo_botao', 'formato'
+        ];
 
-        // Eventos de Estilo
-        const inputsEstilo = ['tamanho_fonte', 'cor_texto', 'cor_fundo', 'raio_borda'];
-        inputsEstilo.forEach(chave => {
-            const input = document.getElementById(`prop-estilo-${chave}`);
+        camposConteudo.forEach(campoNome => {
+            const input = document.getElementById(`prop-campo-${campoNome}`);
             if (input) {
-                input.addEventListener('input', (e) => {
-                    const valor = e.target.value;
-                    const estilos = {};
-                    estilos[this.escopoAtivo] = {};
-                    estilos[this.escopoAtivo][chave] = valor;
+                const evento = (input.tagName === 'INPUT' && input.type === 'text') ? 'input' : 'change';
+                input.addEventListener(evento, (e) => {
+                    const valor = input.type === 'checkbox' ? input.checked : e.target.value;
+                    const conteudo = {};
+                    conteudo[campoNome] = valor;
 
-                    // Atualiza em tempo real no elemento
-                    if (chave === 'tamanho_fonte') el.style.fontSize = `${valor}px`;
-                    if (chave === 'cor_texto') el.style.color = valor;
-                    if (chave === 'cor_fundo') el.style.backgroundColor = valor;
+                    // Atualização instantânea no DOM se aplicável
+                    if (campoNome === 'texto') {
+                        const alvo = el.querySelector('.elemento-titulo, .elemento-texto, .elemento-botao span');
+                        if (alvo) alvo.innerText = valor;
+                    }
 
                     this.editor.autosaveManager.agendarSalvamento({
                         elemento_id: id,
-                        estilos: estilos
+                        conteudo: conteudo,
                     });
                 });
             }
         });
 
-        // Botões de Ação
+        // Estilos
+        ['cor_texto', 'cor_fundo', 'sombra', 'animacao'].forEach(chave => {
+            const input = document.getElementById(`prop-estilo-${chave}`);
+            if (input) {
+                input.addEventListener('change', (e) => {
+                    const valor = e.target.value;
+                    const estilos = {};
+                    estilos[this.escopoAtivo] = {};
+                    estilos[this.escopoAtivo][chave] = valor;
+
+                    if (chave === 'cor_texto') el.style.color = valor;
+                    if (chave === 'cor_fundo') el.style.backgroundColor = valor;
+
+                    this.editor.autosaveManager.agendarSalvamento({
+                        elemento_id: id,
+                        estilos: estilos,
+                    });
+                });
+            }
+        });
+
+        // Ações de Duplicar e Excluir
         document.getElementById('btn-prop-duplicar')?.addEventListener('click', () => {
             this.editor.duplicarElemento(id);
         });
@@ -235,9 +450,9 @@ export class PropriedadesManager {
                 <div class="form-group-prop">
                     <label class="prop-label">Tipo de Seção</label>
                     <select class="prop-select" id="prop-secao-tipo">
-                        <option value="NORMAL" ${tipoAtual === 'NORMAL' ? 'selected' : ''}>Normal (Conteúdo)</option>
-                        <option value="ALTURA_MINIMA" ${tipoAtual === 'ALTURA_MINIMA' ? 'selected' : ''}>Altura Mínima</option>
-                        <option value="TELA_CHEIA" ${tipoAtual === 'TELA_CHEIA' ? 'selected' : ''}>Tela Cheia (100vh)</option>
+                        <option value="normal" ${tipoAtual.toLowerCase() === 'normal' ? 'selected' : ''}>Normal (Conteúdo)</option>
+                        <option value="altura_minima" ${tipoAtual.toLowerCase() === 'altura_minima' ? 'selected' : ''}>Altura Mínima</option>
+                        <option value="tela_cheia" ${tipoAtual.toLowerCase() === 'tela_cheia' ? 'selected' : ''}>Tela Cheia (100vh)</option>
                     </select>
                 </div>
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--studio-border); display: flex; justify-content: space-between;">
@@ -267,7 +482,7 @@ export class PropriedadesManager {
     }
 
     renderizarPropriedadesContainer(id, el) {
-        const layoutAtual = el.dataset.layout || 'STACK';
+        const layoutAtual = el.dataset.layout || 'stack';
 
         this.conteudoEl.innerHTML = `
             <div class="propriedades-header">
@@ -277,10 +492,10 @@ export class PropriedadesManager {
                 <div class="form-group-prop">
                     <label class="prop-label">Tipo de Layout</label>
                     <select class="prop-select" id="prop-container-layout">
-                        <option value="STACK" ${layoutAtual === 'STACK' ? 'selected' : ''}>Pilha Vertical (Stack)</option>
-                        <option value="ROW" ${layoutAtual === 'ROW' ? 'selected' : ''}>Linha Horizontal (Row)</option>
-                        <option value="GRID" ${layoutAtual === 'GRID' ? 'selected' : ''}>Grade (Grid 2 Colunas)</option>
-                        <option value="OVERLAY" ${layoutAtual === 'OVERLAY' ? 'selected' : ''}>Sobreposição (Overlay)</option>
+                        <option value="stack" ${layoutAtual.toLowerCase() === 'stack' ? 'selected' : ''}>Pilha Vertical (Stack)</option>
+                        <option value="row" ${layoutAtual.toLowerCase() === 'row' ? 'selected' : ''}>Linha Horizontal (Row)</option>
+                        <option value="grid" ${layoutAtual.toLowerCase() === 'grid' ? 'selected' : ''}>Grade (Grid 2 Colunas)</option>
+                        <option value="overlay" ${layoutAtual.toLowerCase() === 'overlay' ? 'selected' : ''}>Sobreposição (Overlay)</option>
                     </select>
                 </div>
             </div>
@@ -289,7 +504,7 @@ export class PropriedadesManager {
 
     escapeHtml(str) {
         if (!str) return '';
-        return str
+        return String(str)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
