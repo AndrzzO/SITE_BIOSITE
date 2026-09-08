@@ -1,124 +1,174 @@
 {% extends "painel/base.html" %}
 {% load humanize %}
 
-{% block title %}Meus Sites — Workspace BioSite NFC{% endblock %}
+{% block title %}Dashboard — Centro Operacional BioSite NFC{% endblock %}
 
 {% block content %}
-<div class="workspace-header">
-    <div>
-        <h1 class="workspace-title">Meus Sites</h1>
-        <p class="workspace-subtitle">
-            Gerencie, edite e publique seus projetos de BioSites e páginas digitais com tecnologia NFC.
-        </p>
+<!-- Header Superior do Dashboard -->
+<div class="app-content-header">
+    <div class="header-title-wrapper">
+        <button type="button" class="mobile-menu-toggle js-mobile-menu-toggle" aria-label="Abrir menu de navegação" title="Abrir menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div>
+            <h1 class="app-content-headerText">Dashboard</h1>
+            <span class="app-content-headerSub">Centro Operacional de BioSites &bull; Meus Sites</span>
+        </div>
     </div>
-    <div>
-        <a href="{% url 'painel:site_novo' %}" class="btn btn-primary">
-            + Novo Site
+
+    <div class="header-actions-wrapper">
+        <!-- Alternador de Tema Dark / Light -->
+        <button type="button" class="mode-switch" title="Alternar entre tema Claro e Escuro" aria-label="Alternar tema">
+            <svg class="moon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" height="20" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+            </svg>
+        </button>
+
+        <!-- Botão Primário em Destaque: + Criar Novo Site -->
+        <a href="{% url 'painel:site_novo' %}" class="app-content-headerButton btn-novo-site" title="Criar um novo BioSite">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Criar Novo Site</span>
         </a>
     </div>
 </div>
 
-<div class="toolbar">
-    <div class="filter-pills">
-        <a href="?status=ativos{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'ativos' or not status_atual %}active{% endif %}">
-            Ativos
-        </a>
-        <a href="?status=arquivados{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'arquivados' %}active{% endif %}">
-            Arquivados
-        </a>
-        <a href="?status=todos{% if q %}&q={{ q }}{% endif %}" class="pill {% if status_atual == 'todos' %}active{% endif %}">
-            Todos
-        </a>
-    </div>
+<!-- Resumo Operacional: Cards KPI com Dados Reais -->
+{% include "painel/componentes/kpi_cards.html" %}
 
-    <form method="get" class="search-form">
-        {% if status_atual %}
+<!-- Barra de Ações: Busca, Filtros e Alternância de Visualização -->
+<div class="app-content-actions">
+    <form method="get" action="{% url 'painel:sites' %}" class="search-form-wrapper" id="dashboardSearchForm">
+        {% if status_atual and status_atual != 'ativos' %}
             <input type="hidden" name="status" value="{{ status_atual }}">
         {% endif %}
-        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por site, cliente ou slug..." class="form-input" style="padding: 0.45rem 0.75rem;">
-        <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+        {% if cliente_atual %}
+            <input type="hidden" name="cliente" value="{{ cliente_atual }}">
+        {% endif %}
+        <input class="search-bar" name="q" value="{{ q }}" placeholder="Buscar cliente, site, domínio ou slug..." type="text" autocomplete="off">
         {% if q %}
-            <a href="{% url 'painel:sites' %}" class="btn btn-secondary btn-sm" title="Limpar busca">&times;</a>
+            <a href="{% url 'painel:sites' %}{% if status_atual %}?status={{ status_atual }}{% endif %}" class="search-clear-btn" title="Limpar busca">&times;</a>
         {% endif %}
     </form>
+
+    <div class="app-content-actions-wrapper">
+        <!-- Menu de Filtros Flutuante -->
+        <div class="filter-button-wrapper">
+            <button type="button" class="action-button filter jsFilter" title="Filtrar sites">
+                <span>Filtros</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            </button>
+            <div class="filter-menu">
+                <form method="get" action="{% url 'painel:sites' %}">
+                    {% if q %}
+                        <input type="hidden" name="q" value="{{ q }}">
+                    {% endif %}
+                    
+                    <label for="filterStatus">Status</label>
+                    <select name="status" id="filterStatus">
+                        <option value="ativos" {% if status_atual == 'ativos' %}selected{% endif %}>Todos os Ativos</option>
+                        <option value="no_ar" {% if status_atual == 'no_ar' %}selected{% endif %}>● No ar (Publicados)</option>
+                        <option value="fora_do_ar" {% if status_atual == 'fora_do_ar' %}selected{% endif %}>○ Fora do ar</option>
+                        <option value="rascunho" {% if status_atual == 'rascunho' %}selected{% endif %}>◌ Rascunhos</option>
+                        <option value="pendentes" {% if status_atual == 'pendentes' %}selected{% endif %}>● Alterações não publicadas</option>
+                        <option value="arquivados" {% if status_atual == 'arquivados' %}selected{% endif %}>✕ Arquivados</option>
+                        <option value="todos" {% if status_atual == 'todos' %}selected{% endif %}>Todos (incluindo arquivados)</option>
+                    </select>
+
+                    <label for="filterCliente">Cliente</label>
+                    <select name="cliente" id="filterCliente">
+                        <option value="">Todos os Clientes</option>
+                        {% for cli in clientes_filtro %}
+                            <option value="{{ cli.id }}" {% if cliente_atual == cli.id|stringformat:'s' %}selected{% endif %}>{{ cli.nome }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="filter-menu-buttons">
+                        <a href="{% url 'painel:sites' %}" class="filter-button reset">Limpar</a>
+                        <button type="submit" class="filter-button apply">Aplicar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Botões de Alternância: Tabela / Grade -->
+        <button type="button" class="action-button list active js-view-list" title="Visualização em Lista (Tabela)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        </button>
+        <button type="button" class="action-button grid js-view-grid" title="Visualização em Grade (Cards)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        </button>
+    </div>
 </div>
 
+<!-- Listagem Principal de Sites e Clientes -->
 {% if sites %}
-    <div class="sites-grid">
-        {% for site in sites %}
-            <div class="site-card">
-                <div class="site-card-thumb">
-                    {% if site.tipo == 'biosite' %}
-                        📱
-                    {% else %}
-                        🌐
-                    {% endif %}
-                    {% if site.status == 'rascunho' %}
-                        <span class="site-card-badge badge-rascunho">Rascunho</span>
-                    {% elif site.status == 'publicado' %}
-                        <span class="site-card-badge badge-publicado">Publicado</span>
-                    {% else %}
-                        <span class="site-card-badge badge-arquivado">Arquivado</span>
-                    {% endif %}
-                </div>
-
-                <div class="site-card-body">
-                    <a href="{% url 'painel:site_detalhe' site.uuid %}" style="text-decoration: none;">
-                        <h2 class="site-card-title">{{ site.nome }}</h2>
-                    </a>
-                    <div class="site-card-client">
-                        Cliente: <strong>{{ site.cliente.nome }}</strong>
-                    </div>
-
-                    <div class="site-card-meta">
-                        <span>Atualizado {{ site.atualizado_em|naturaltime }}</span>
-                        <div style="display: flex; gap: 0.375rem;">
-                            {% if site.status == 'publicado' and site.publicacao_ativa %}
-                                <a href="{{ site.obter_url_publica }}" target="_blank" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #10b981; border-color: rgba(16,185,129,0.4);" title="Abrir site publicado no ar">
-                                    ↗ No Ar
-                                </a>
-                            {% endif %}
-                            <a href="{% url 'painel:site_detalhe' site.uuid %}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                Abrir
-                            </a>
-                            <form method="post" action="{% url 'painel:site_duplicar' site.uuid %}" style="margin: 0;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Duplicar projeto">
-                                    Duplicar
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+    <div class="products-area-wrapper sites-area-wrapper tableView" id="sitesAreaWrapper">
+        <!-- Visualização em Tabela (List View) -->
+        <div class="sites-table-view">
+            <div class="products-header sites-header">
+                <div class="product-cell cell-site">CLIENTE / SITE</div>
+                <div class="product-cell cell-status">STATUS</div>
+                <div class="product-cell cell-domain">DOMÍNIO</div>
+                <div class="product-cell cell-date">ÚLTIMA ATUALIZAÇÃO</div>
+                <div class="product-cell cell-views">VIEWS</div>
+                <div class="product-cell cell-actions">AÇÕES</div>
             </div>
-        {% endfor %}
+
+            {% for site in sites %}
+                {% include "painel/componentes/site_row.html" with site=site %}
+            {% endfor %}
+        </div>
+
+        <!-- Visualização em Grade (Grid View) -->
+        <div class="sites-grid-view">
+            {% for site in sites %}
+                {% include "painel/componentes/site_card.html" with site=site %}
+            {% endfor %}
+        </div>
     </div>
 
+    <!-- Paginação -->
     {% if is_paginated %}
-        <div class="pagination">
-            {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}" class="page-btn">&laquo; Anterior</a>
-            {% endif %}
-            <span class="page-btn active">{{ page_obj.number }} de {{ paginator.num_pages }}</span>
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}" class="page-btn">Próxima &raquo;</a>
-            {% endif %}
+        <div class="pagination-wrapper">
+            <div class="pagination-info">
+                Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ paginator.count }} sites
+            </div>
+            <div class="pagination-buttons">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}{% if cliente_atual %}&cliente={{ cliente_atual }}{% endif %}" class="page-link">&laquo; Anterior</a>
+                {% endif %}
+
+                <span class="page-current">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_atual %}&status={{ status_atual }}{% endif %}{% if cliente_atual %}&cliente={{ cliente_atual }}{% endif %}" class="page-link">Próxima &raquo;</a>
+                {% endif %}
+            </div>
         </div>
     {% endif %}
 
 {% else %}
-    <div class="empty-state">
-        <div class="empty-state-icon">🌐</div>
-        {% if q or status_atual != 'ativos' and status_atual %}
+    <!-- Estados Vazios -->
+    <div class="empty-state-wrapper">
+        {% if q or status_atual != 'ativos' or cliente_atual %}
+            <div class="empty-state-icon">🔍</div>
             <h2 class="empty-state-title">Nenhum site encontrado</h2>
-            <p class="empty-state-desc">Nenhum projeto corresponde aos critérios de busca ou filtro ativos.</p>
-            <a href="{% url 'painel:sites' %}" class="btn btn-secondary">Limpar Filtros</a>
+            <p class="empty-state-desc">
+                Não encontramos nenhum BioSite correspondente aos filtros ou termo de busca informado.
+            </p>
+            <a href="{% url 'painel:sites' %}" class="btn-action-primary" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 8px 18px; border-radius: 6px; font-size: 14px;">
+                <span>Limpar Filtros</span>
+            </a>
         {% else %}
+            <div class="empty-state-icon">📱</div>
             <h2 class="empty-state-title">Você ainda não criou nenhum site</h2>
             <p class="empty-state-desc">
-                Crie seu primeiro projeto para começar. Cada site é associado a um cliente comercial e preparado para acesso mobile via NFC e QR Code.
+                Comece criando seu primeiro BioSite com suporte a cartões NFC, QR Code e domínio personalizado.
             </p>
-            <a href="{% url 'painel:site_novo' %}" class="btn btn-primary">+ Criar Primeiro Site</a>
+            <a href="{% url 'painel:site_novo' %}" class="app-content-headerButton btn-novo-site" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 24px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Criar Novo Site</span>
+            </a>
         {% endif %}
     </div>
 {% endif %}

@@ -14,16 +14,16 @@ from aplicativos.administracao.permissoes import RequerAutenticacaoAdministrativ
 from aplicativos.clientes.models import Cliente
 
 from .forms import ProjetoSiteCriacaoForm, ProjetoSiteEdicaoForm
-from .models import ProjetoSite
+from .models import EventoAnalitico, ProjetoSite
 from .servicos import duplicar_projeto
 
 
 class WorkspaceSitesView(RequerAutenticacaoAdministrativaMixin, ListView):
     """
-    Workspace administrativo 'Meus Sites'.
+    Workspace administrativo e centro operacional 'Meus Sites'.
 
     Exibe os projetos de BioSites e páginas cadastradas, com busca no backend,
-    filtros por status e paginação estruturada.
+    filtros por status e cliente, métricas em tempo real e paginação estruturada.
     """
 
     model = ProjetoSite
@@ -32,9 +32,20 @@ class WorkspaceSitesView(RequerAutenticacaoAdministrativaMixin, ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        # Evita N+1 carregando o cliente e publicação ativa vinculados
-        qs = ProjetoSite.objects.select_related("cliente", "publicacao_ativa").order_by(
-            "-atualizado_em"
+        # Evita N+1 carregando cliente, publicação ativa e endereços vinculados
+        qs = (
+            ProjetoSite.objects.select_related("cliente", "publicacao_ativa")
+            .prefetch_related("enderecos")
+            .annotate(
+                total_views=models.Count(
+                    "eventos_analiticos",
+                    filter=models.Q(
+                        eventos_analiticos__tipo_evento=EventoAnalitico.TipoEvento.PAGE_VIEW
+                    ),
+                    distinct=True,
+                )
+            )
+            .order_by("-atualizado_em")
         )
 
         termo = self.request.GET.get("q", "").strip()
@@ -44,10 +55,40 @@ class WorkspaceSitesView(RequerAutenticacaoAdministrativaMixin, ListView):
                 | models.Q(slug__icontains=termo)
                 | models.Q(cliente__nome__icontains=termo)
                 | models.Q(cliente__nome_fantasia__icontains=termo)
-            )
+                | models.Q(enderecos__host__icontains=termo)
+            ).distinct()
 
+        # Filtro por cliente
+        cliente_ref = self.request.GET.get("cliente", "").strip()
+        if cliente_ref:
+            if cliente_ref.isdigit():
+                qs = qs.filter(cliente_id=int(cliente_ref))
+            else:
+                qs = qs.filter(cliente__uuid=cliente_ref)
+
+        # Filtro por status
         filtro_status = self.request.GET.get("status", "ativos").strip().lower()
-        if filtro_status == "arquivados":
+        if filtro_status in ("no_ar", "publicados", "publicado"):
+            qs = qs.filter(
+                status=ProjetoSite.Status.PUBLICADO,
+                publicacao_ativa__isnull=False,
+            )
+        elif filtro_status in ("fora_do_ar", "offline"):
+            qs = qs.filter(status=ProjetoSite.Status.RASCUNHO)
+        elif filtro_status == "rascunho":
+            qs = qs.filter(
+                status=ProjetoSite.Status.RASCUNHO,
+                publicacoes__isnull=True,
+            )
+        elif filtro_status in ("pendentes", "alteracoes"):
+            # Publicados que possuem alterações não publicadas
+            projetos_pub = ProjetoSite.objects.filter(
+                status=ProjetoSite.Status.PUBLICADO,
+                publicacao_ativa__isnull=False,
+            ).select_related("publicacao_ativa")
+            uuids_pendentes = [p.uuid for p in projetos_pub if p.tem_alteracoes_nao_publicadas()]
+            qs = qs.filter(uuid__in=uuids_pendentes)
+        elif filtro_status == "arquivados":
             qs = qs.filter(status=ProjetoSite.Status.ARQUIVADO)
         elif filtro_status == "todos":
             pass  # Exibe todos os projetos
@@ -59,10 +100,31 @@ class WorkspaceSitesView(RequerAutenticacaoAdministrativaMixin, ListView):
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        context["titulo"] = "Meus Sites"
+        context["titulo"] = "Dashboard"
         context["q"] = self.request.GET.get("q", "")
         context["status_atual"] = self.request.GET.get("status", "ativos")
+        context["cliente_atual"] = self.request.GET.get("cliente", "")
         context["total_geral"] = ProjetoSite.objects.count()
+
+        # Dados reais para os KPI Cards operacionais superiores
+        context["total_clientes"] = Cliente.objects.count()
+        context["total_sites_no_ar"] = ProjetoSite.objects.filter(
+            status=ProjetoSite.Status.PUBLICADO, publicacao_ativa__isnull=False
+        ).count()
+        context["total_sites_fora_ar"] = (
+            ProjetoSite.objects.filter(status=ProjetoSite.Status.RASCUNHO)
+            .exclude(status=ProjetoSite.Status.ARQUIVADO)
+            .count()
+        )
+
+        projetos_publicados = ProjetoSite.objects.filter(
+            status=ProjetoSite.Status.PUBLICADO, publicacao_ativa__isnull=False
+        ).select_related("publicacao_ativa")
+        context["total_alteracoes_pendentes"] = sum(
+            1 for p in projetos_publicados if p.tem_alteracoes_nao_publicadas()
+        )
+
+        context["clientes_filtro"] = Cliente.objects.all().order_by("nome")
         return context
 
 

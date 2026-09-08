@@ -1,0 +1,105 @@
+{% load humanize %}
+<div class="site-grid-card" data-site-uuid="{{ site.uuid }}">
+    <!-- Top Thumbnail / Banner -->
+    <div class="card-thumb-banner">
+        {% if site.imagem_compartilhamento and site.imagem_compartilhamento.arquivo %}
+            <img src="{{ site.imagem_compartilhamento.arquivo.url }}" alt="{{ site.nome }}" class="card-thumb-img">
+        {% else %}
+            <div class="card-thumb-placeholder">
+                <span class="placeholder-initials">{{ site.nome|slice:":2"|upper }}</span>
+                <span class="placeholder-type">BioSite</span>
+            </div>
+        {% endif %}
+
+        <!-- Badge no topo do card -->
+        <div class="card-badge-overlay">
+            {% include "painel/componentes/status_badge.html" with site=site %}
+        </div>
+
+        <!-- Menu ⋮ no topo do card -->
+        <div class="card-more-overlay">
+            <div class="action-more-wrapper">
+                <button type="button" class="btn-action-more js-action-dropdown-btn" aria-label="Mais opções para {{ site.nome }}" title="Mais opções">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+                </button>
+                <div class="action-dropdown-menu">
+                    <a href="{% url 'painel:site_detalhe' site.uuid %}" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Visão Geral & Configurações</span>
+                    </a>
+                    <a href="{% url 'painel:site_analytics' site.uuid %}" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                        <span>Analytics do Site</span>
+                    </a>
+                    <a href="{% url 'painel:site_detalhe' site.uuid %}#dominios" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        <span>Gerenciar Domínios</span>
+                    </a>
+                    <a href="{% url 'painel:site_detalhe' site.uuid %}#links" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                        <span>Tags NFC e QR Code</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <form method="post" action="{% url 'painel:site_duplicar' site.uuid %}" class="dropdown-form">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item dropdown-btn-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            <span>Duplicar Projeto</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body">
+        <div class="card-title-group">
+            <a href="{% url 'painel:site_editor' site.uuid %}" class="card-title-link" title="Abrir editor diretamente (1 clique)">
+                {{ site.nome }}
+            </a>
+            <a href="{% url 'painel:cliente_detalhe' site.cliente.uuid %}" class="card-client-link" title="Ver cliente">
+                {{ site.cliente.nome }}
+            </a>
+        </div>
+
+        <div class="card-domain-info">
+            {% with endereco=site.obter_endereco_principal %}
+                {% if endereco %}
+                    <span class="domain-badge" title="{{ endereco.host }}">{{ endereco.host }}</span>
+                {% else %}
+                    <span class="domain-badge domain-slug" title="/b/{{ site.slug }}/">/b/{{ site.slug }}/</span>
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="card-meta-row">
+            <span class="card-meta-date" title="{{ site.atualizado_em|date:'d/m/Y H:i' }}">
+                {{ site.atualizado_em|naturaltime }}
+            </span>
+            <a href="{% url 'painel:site_analytics' site.uuid %}" class="card-meta-views" title="Ver analytics">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>{{ site.total_views|default:0|intcomma }}</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Card Actions Footer -->
+    <div class="card-actions-footer">
+        <a href="{% url 'painel:site_editor' site.uuid %}" class="btn-action btn-action-edit" title="Editar site imediatamente (1 clique)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Editar</span>
+        </a>
+
+        <a href="{{ site.obter_url_publica }}" target="_blank" rel="noopener" class="btn-action btn-action-open {% if not site.esta_publicado %}disabled{% endif %}" {% if not site.esta_publicado %}aria-disabled="true"{% endif %} title="{% if site.esta_publicado %}Abrir site publicado{% else %}Site fora do ar{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            <span>Abrir</span>
+        </a>
+
+        <div class="switch-wrapper" title="{% if site.esta_publicado %}Tirar site do ar{% else %}Colocar site no ar{% endif %}">
+            <button type="button" class="switch-status {% if site.esta_publicado %}active{% endif %}" data-uuid="{{ site.uuid }}" data-status="{% if site.esta_publicado %}online{% else %}offline{% endif %}" data-url-despublicar="{% url 'painel:site_despublicar' site.uuid %}" data-url-publicar="{% url 'painel:site_publicar' site.uuid %}" aria-label="Alternar publicação online/offline">
+                <span class="switch-slider"></span>
+            </button>
+        </div>
+    </div>
+</div>

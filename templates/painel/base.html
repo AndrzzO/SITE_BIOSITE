@@ -5,43 +5,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>{% block title %}Workspace — BioSite NFC{% endblock %}</title>
+    <title>{% block title %}BioSite NFC — Painel Administrativo{% endblock %}</title>
+    <!-- Script imediato anti-FOUC para preservar o tema Dark / Light sem flash visual -->
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('biosite_painel_theme');
+                if (theme === 'light') {
+                    document.documentElement.classList.add('light');
+                }
+            } catch(e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="{% static 'painel/css/painel.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="painel-wrapper">
-        <header class="topbar">
-            <div style="display: flex; align-items: center; gap: 2rem;">
-                <a href="{% url 'painel:sites' %}" class="topbar-brand">
-                    BioSite <span>NFC</span>
-                </a>
-                <nav class="topbar-nav" aria-label="Navegação Principal">
-                    <a href="{% url 'painel:sites' %}" class="nav-link {% if 'sites' in request.path or request.path == '/painel/' %}active{% endif %}">Meus Sites</a>
-                    <a href="{% url 'painel:clientes_lista' %}" class="nav-link {% if 'clientes' in request.path %}active{% endif %}">Clientes</a>
-                    <a href="{% url 'painel:templates_lista' %}" class="nav-link {% if 'templates' in request.path %}active{% endif %}">Templates</a>
-                    <a href="{% url 'painel:links_lista' %}" class="nav-link {% if 'links' in request.path %}active{% endif %}">NFC / QR</a>
-                    <a href="{% url 'painel:analytics_global' %}" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">Analytics</a>
-                </nav>
-            </div>
+    <div class="app-container">
+        <!-- Sidebar Modular -->
+        {% include "painel/componentes/sidebar.html" %}
 
-            <div class="topbar-user">
-                <div class="user-badge" title="Operador Administrativo">
-                    <span class="user-dot"></span>
-                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
-                </div>
-                <form method="post" action="{% url 'painel:logout' %}" style="margin: 0;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary btn-sm" aria-label="Encerrar sessão">
-                        Sair
-                    </button>
-                </form>
-            </div>
-        </header>
+        <!-- Conteúdo Principal da Aplicação -->
+        <main class="app-content" id="appContent">
+            <!-- Container de Toasts para Notificações Operacionais -->
+            {% include "painel/componentes/toast.html" %}
 
-        <main class="workspace-main">
+            <!-- Mensagens do Django Framework -->
             {% if messages %}
-                <div style="margin-bottom: 1.5rem;">
+                <div class="messages-container">
                     {% for message in messages %}
                         <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" role="alert">
                             <span>{{ message }}</span>
@@ -53,6 +44,9 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    <!-- Token CSRF oculto para uso em scripts assíncronos -->
+    {% csrf_token %}
 
     <script src="{% static 'painel/js/painel.js' %}"></script>
     {% block extra_js %}{% endblock %}

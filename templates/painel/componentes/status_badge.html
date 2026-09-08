@@ -1,0 +1,27 @@
+<div class="status-badge-container" data-site-uuid="{{ site.uuid }}">
+    {% if site.status == 'publicado' and site.publicacao_ativa %}
+        {% if site.tem_alteracoes_nao_publicadas %}
+            <span class="status status-warning" title="Publicado com alterações no rascunho pendentes de publicação">
+                <span class="status-dot"></span> No ar • Pendente
+            </span>
+        {% else %}
+            <span class="status status-active" title="Publicado e ativo para o público">
+                <span class="status-dot"></span> No ar
+            </span>
+        {% endif %}
+    {% elif site.status == 'arquivado' %}
+        <span class="status status-archived" title="Projeto arquivado">
+            <span class="status-dot"></span> Arquivado
+        </span>
+    {% else %}
+        {% if site.publicacao_ativa or site.publicacoes.exists %}
+            <span class="status status-disabled" title="Site fora do ar (despublicado)">
+                <span class="status-dot"></span> Fora do ar
+            </span>
+        {% else %}
+            <span class="status status-draft" title="Rascunho inicial ainda não publicado">
+                <span class="status-dot"></span> Rascunho
+            </span>
+        {% endif %}
+    {% endif %}
+</div>

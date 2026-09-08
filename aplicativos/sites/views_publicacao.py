@@ -76,6 +76,7 @@ class PublicarProjetoView(RequerAutenticacaoAdministrativaMixin, View):
             return JsonResponse(
                 {
                     "ok": True,
+                    "esta_publicado": True,
                     "versao": publicacao.numero_versao,
                     "hash": publicacao.hash_conteudo[:8],
                     "publicado_em": publicacao.publicado_em.strftime("%d/%m/%Y às %H:%M"),
@@ -250,8 +251,10 @@ class DespublicarProjetoView(RequerAutenticacaoAdministrativaMixin, View):
         despublicar_projeto(projeto, usuario=request.user)
         msg = f"O site '{projeto.nome}' foi despublicado com sucesso e não está mais visível para o público."
 
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"ok": True, "mensagem": msg})
+        if request.headers.get(
+            "X-Requested-With"
+        ) == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", ""):
+            return JsonResponse({"ok": True, "esta_publicado": False, "mensagem": msg})
 
         messages.success(request, msg)
         return redirect("painel:site_detalhe", uuid=projeto.uuid)

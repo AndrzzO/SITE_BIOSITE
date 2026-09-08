@@ -1,0 +1,45 @@
+<div class="kpi-grid">
+    <a href="{% url 'painel:clientes_lista' %}" class="kpi-card" title="Ver todos os clientes cadastrados">
+        <div class="kpi-header">
+            <span class="kpi-label">CLIENTES</span>
+            <div class="kpi-icon-wrapper" style="color: #38bdf8;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+        </div>
+        <div class="kpi-value">{{ total_clientes|default:0 }}</div>
+        <div class="kpi-footer">Gerenciar clientes &rarr;</div>
+    </a>
+
+    <a href="?status=no_ar" class="kpi-card {% if status_atual == 'no_ar' %}active-filter{% endif %}" title="Filtrar sites atualmente publicados">
+        <div class="kpi-header">
+            <span class="kpi-label">SITES NO AR</span>
+            <div class="kpi-icon-wrapper" style="color: #2ba972;">
+                <span class="status-dot" style="background-color: #2ba972; width: 8px; height: 8px;"></span>
+            </div>
+        </div>
+        <div class="kpi-value" style="color: #2ba972;">{{ total_sites_no_ar|default:0 }}</div>
+        <div class="kpi-footer">Online e acessíveis</div>
+    </a>
+
+    <a href="?status=fora_do_ar" class="kpi-card {% if status_atual == 'fora_do_ar' %}active-filter{% endif %}" title="Filtrar sites fora do ar">
+        <div class="kpi-header">
+            <span class="kpi-label">SITES FORA DO AR</span>
+            <div class="kpi-icon-wrapper" style="color: #94a3b8;">
+                <span class="status-dot" style="background-color: #94a3b8; width: 8px; height: 8px;"></span>
+            </div>
+        </div>
+        <div class="kpi-value" style="color: #94a3b8;">{{ total_sites_fora_ar|default:0 }}</div>
+        <div class="kpi-footer">Despublicados / Rascunhos</div>
+    </a>
+
+    <a href="?status=pendentes" class="kpi-card {% if status_atual == 'pendentes' %}active-filter{% endif %}" title="Filtrar sites com alterações não publicadas">
+        <div class="kpi-header">
+            <span class="kpi-label">ALTERAÇÕES PENDENTES</span>
+            <div class="kpi-icon-wrapper" style="color: #f59e0b;">
+                <span class="status-dot" style="background-color: #f59e0b; width: 8px; height: 8px;"></span>
+            </div>
+        </div>
+        <div class="kpi-value" style="color: #f59e0b;">{{ total_alteracoes_pendentes|default:0 }}</div>
+        <div class="kpi-footer">Aguardando publicação</div>
+    </a>
+</div>
